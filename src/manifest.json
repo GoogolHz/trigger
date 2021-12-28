@@ -1,0 +1,7 @@
+{
+	"name": "Grabbable",
+	"author": "GoogolHz",
+	"license": "MIT",
+	"repositoryUrl": "https://github.com/GoogolHz/grabbable",
+	"optionalPermissions": ["user-interaction"]
+}
