@@ -52,7 +52,7 @@ interface BodyTracker {
 /**
  * The main class of this app. All the logic goes here.
  */
-export default class grabbable {
+export default class Grabbable {
 	/*
 	 * Declare a SyncFix object
 	 * Set to refresh every 5000 ms (5 sec)
@@ -85,6 +85,7 @@ export default class grabbable {
 
 	private assets: MRE.AssetContainer;
 
+
 	public rolesString: string;
 	public rolesArray: string[];
 
@@ -96,7 +97,11 @@ export default class grabbable {
 
 	// public
 
-	// private videoWand: MRE.Actor;
+	private videoWand: MRE.Actor;
+	private fractalTransA: MRE.Actor;
+	private fractalTransB: MRE.Actor;
+
+
 
 	public PI = Math.PI;
 	public TAU = Math.PI*2;
@@ -159,8 +164,8 @@ export default class grabbable {
 	// 	}
 	// }
 
-	// constructor(private context: MRE.Context, protected baseUrl: string, public params: MRE.ParameterSet ) {
 	constructor(private context: MRE.Context, private params: MRE.ParameterSet, private baseUrl: string) {
+		// constructor(private context: MRE.Context, protected baseUrl: string) {
 
 		this.context.onStarted(() => this.started());
 	}
@@ -224,14 +229,14 @@ export default class grabbable {
 	this.syncfix.addSyncFunc(() => this.synchronizeAttachments());
 
 		// this.roles = this.params.roles as
-	this.rolesString = this.params.roles as string;
-	this.rolesArray = this.rolesString.split(',');
-
-	this.wingsString = this.params.wings as string;
-	this.wingsArray = this.wingsString.split(',');
-
-	this.chokerString = this.params.choker as string;
-	this.chokerArray = this.chokerString.split(',');
+	// this.rolesString = this.params.roles as string;
+	// this.rolesArray = this.rolesString.split(',');
+	//
+	// this.wingsString = this.params.wings as string;
+	// this.wingsArray = this.wingsString.split(',');
+	//
+	// this.chokerString = this.params.choker as string;
+	// this.chokerArray = this.chokerString.split(',');
 
 	// if (this.params.roles === undefined) {
 	// 			this.roles = "";
@@ -242,6 +247,84 @@ export default class grabbable {
 	// 		}
 
 
+	this.videoWand = MRE.Actor.CreateFromLibrary(this.context, {
+
+		// resourceId: 'artifact:1768257866851943023', // fractal
+		resourceId: 'artifact:1794380576673759640',  //videoLumaWand
+		// resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
+		// resourceId: 'artifact:1816236824872354109',  //videoWand
+			actor: {
+				name: "fractal1",
+				collider: { geometry: { shape: MRE.ColliderType.Auto } },
+				transform: {
+					local: {
+						scale: { x: 1, y: 1, z: 1 },
+						rotation:  MRE.Quaternion.FromEulerAngles(0, 0, 0)
+					},
+					app: {
+						// position: { x:40, y:1, z:40 },
+						position: { x:0, y:0, z:0 },
+						rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
+					}
+				},
+				// rigidBody: {
+				// 	mass: 1,
+				// },
+				// subscriptions: ['transform'],
+			}
+		});
+
+		this.videoWand.created().then(() => this.videoWand.grabbable = true);
+
+		this.fractalTransA = MRE.Actor.CreateFromLibrary(this.context, {
+			resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
+				actor: {
+					name: "fractal1",
+					collider: {
+						geometry: {
+							shape: MRE.ColliderType.Box,
+							size: { x: 1, y: .001, z: 1 }
+						} 
+					},
+					transform: {
+						local: {
+							scale: { x: 6, y: 6, z: 6 },
+							rotation:  MRE.Quaternion.FromEulerAngles(0, 0, 0)
+						},
+						app: {
+							// position: { x:40, y:1, z:40 },
+							position: { x:0, y:0, z:0 },
+							rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
+						}
+					}
+				}
+			});
+			this.fractalTransA.created().then(() => this.fractalTransA.grabbable = true);
+
+
+			this.fractalTransB = MRE.Actor.CreateFromLibrary(this.context, {
+				resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
+					actor: {
+						name: "fractal2",
+						collider: {
+							geometry: {
+								shape: MRE.ColliderType.Box,
+								size: { x: 1, y: .001, z: 1 }
+							}
+						},
+						transform: {
+							local: {
+								scale: { x: 5, y: 5, z: 5 },
+								rotation:  MRE.Quaternion.FromEulerAngles(0, 0, 0)
+							},
+							app: {
+								position: { x:0, y:0, z:0 },
+								rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
+							}
+						}
+					}
+				});
+				this.fractalTransB.created().then(() => this.fractalTransB.grabbable = true);
 
 
 
@@ -295,8 +378,8 @@ export default class grabbable {
 		// Create a new tracker and attach it to the user
 		//================================
 
-		let choker: MRE.Actor = null;
-		let wings: MRE.Actor = null;
+		// let choker: MRE.Actor = null;
+		// let wings: MRE.Actor = null;
 
 		let attached: MRE.Actor[] = [];
 
@@ -342,108 +425,103 @@ export default class grabbable {
 		// var names = 'Harry,John,Clark,Peter,Rohn,Alice';
 		// var nameArr = this.roles.split(',');
 
-		this.rolesArray.forEach((role) => {
-			if (role=="show") this.text.text.contents = JSON.stringify(usersRoles);
+		// this.rolesArray.forEach((role) => {
+		// 	if (role=="show") this.text.text.contents = JSON.stringify(usersRoles);
+		//
+		// 	if (usersRoles.includes(role) || role == "all") {
+		// 		if (choker===null) {
+		// 			choker = MRE.Actor.CreateFromLibrary(this.context, {
+		// 				resourceId: 'artifact:1779817570145141338',
+		// 				actor: {
+		// 					attachment: {
+		// 						attachPoint: 'neck',
+		// 						userId: user.id
+		// 					},
+		// 					appearance: { enabled: true },
+		// 					transform: {
+		// 						local: {
+		// 							scale: { x:1.005, y:1.005, z:1.005 },
+		// 							position: {x:0, y:-.0275, z:-.005},
+		// 							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
+		// 						},
+		// 					}
+		// 				}
+		// 			});
+		// 			attached.push(choker);
+		// 		}
+		//
+		// 		if (wings===null) {
+		// 			wings = MRE.Actor.CreateFromLibrary(this.context, {
+		// 				resourceId: 'artifact:1781612302869463999',
+		// 				actor: {
+		// 					attachment: {
+		// 						attachPoint: 'spine-middle',
+		// 						userId: user.id
+		// 					},
+		// 					appearance: { enabled: true },
+		// 					transform: {
+		// 						local: {
+		// 							scale: { x:1, y:1, z:1 },
+		// 							position: {x:0, y:.1, z:-.18}, //-.06 .15
+		// 							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
+		// 						},
+		// 					}
+		// 				}
+		// 			});
+		// 			attached.push(wings);
+		// 		}
+		// 	}
+		// });
 
-			if (usersRoles.includes(role) || role == "all") {
-				if (choker===null) {
-					choker = MRE.Actor.CreateFromLibrary(this.context, {
-						resourceId: 'artifact:1779817570145141338',
-						actor: {
-							attachment: {
-								attachPoint: 'neck',
-								userId: user.id
-							},
-							appearance: { enabled: true },
-							transform: {
-								local: {
-									scale: { x:1.005, y:1.005, z:1.005 },
-									position: {x:0, y:-.0275, z:-.005},
-									rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
-								},
-							}
-						}
-					});
-					attached.push(choker);
-				}
+		// this.chokerArray.forEach((role) => {
+		// 	if (usersRoles.includes(role) || role == "all") {
+		// 		if (choker===null) {
+		// 			choker = MRE.Actor.CreateFromLibrary(this.context, {
+		// 				resourceId: 'artifact:1779817570145141338',
+		// 				actor: {
+		// 					attachment: {
+		// 						attachPoint: 'neck',
+		// 						userId: user.id
+		// 					},
+		// 					appearance: { enabled: true },
+		// 					transform: {
+		// 						local: {
+		// 							scale: { x:1.005, y:1.005, z:1.005 },
+		// 							position: {x:0, y:-.0275, z:-.005},
+		// 							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
+		// 						},
+		// 					}
+		// 				}
+		// 			});
+		// 			attached.push(choker);
+		// 		}
+		// 	}
+		// });
 
-				if (wings===null) {
-					wings = MRE.Actor.CreateFromLibrary(this.context, {
-						resourceId: 'artifact:1781612302869463999',
-						actor: {
-							attachment: {
-								attachPoint: 'spine-middle',
-								userId: user.id
-							},
-							appearance: { enabled: true },
-							transform: {
-								local: {
-									scale: { x:1, y:1, z:1 },
-									position: {x:0, y:.1, z:-.18}, //-.06 .15
-									rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
-								},
-							}
-						}
-					});
-					attached.push(wings);
-				}
-
-				// Associate the attachment with the user in the 'attachments' map.
-				// this.attachments.set(user.id, wings);
-				// this.attachments.set(user.id, attached);
-			}
-
-		});
-
-		this.chokerArray.forEach((role) => {
-			if (usersRoles.includes(role) || role == "all") {
-				if (choker===null) {
-					choker = MRE.Actor.CreateFromLibrary(this.context, {
-						resourceId: 'artifact:1779817570145141338',
-						actor: {
-							attachment: {
-								attachPoint: 'neck',
-								userId: user.id
-							},
-							appearance: { enabled: true },
-							transform: {
-								local: {
-									scale: { x:1.005, y:1.005, z:1.005 },
-									position: {x:0, y:-.0275, z:-.005},
-									rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
-								},
-							}
-						}
-					});
-					attached.push(choker);
-				}
-			}
-		});
-
-		this.wingsArray.forEach((role) => {
-			if (usersRoles.includes(role) || role == "all") {
-				if (wings===null) {
-					wings = MRE.Actor.CreateFromLibrary(this.context, {
-						resourceId: 'artifact:1781612302869463999',
-						actor: {
-							attachment: {
-								attachPoint: 'spine-middle',
-								userId: user.id
-							},
-							appearance: { enabled: true },
-							transform: {
-								local: {
-									scale: { x:1, y:1, z:1 },
-									position: {x:0, y:.1, z:-.18}, //-.06 .15
-									rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
-								},
-							}
-						}
-					});
-					attached.push(wings);
-				}
-			}
-		});
+		// this.wingsArray.forEach((role) => {
+		// 	if (usersRoles.includes(role) || role == "all") {
+		// 		if (wings===null) {
+		// 			wings = MRE.Actor.CreateFromLibrary(this.context, {
+		// 				resourceId: 'artifact:1781612302869463999',
+		// 				actor: {
+		// 					attachment: {
+		// 						attachPoint: 'spine-middle',
+		// 						userId: user.id
+		// 					},
+		// 					appearance: { enabled: true },
+		// 					transform: {
+		// 						local: {
+		// 							scale: { x:1, y:1, z:1 },
+		// 							position: {x:0, y:.1, z:-.18}, //-.06 .15
+		// 							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
+		// 						},
+		// 					}
+		// 				}
+		// 			});
+		// 			attached.push(wings);
+		// 		}
+		// 	}
+		// });
 
 		this.attachments.set(user.id, attached);
 
@@ -483,7 +561,7 @@ export default class grabbable {
 		if (this.attachments.has(user.id)) {
 
 
-			let userattachments:MRE.Actor[] = this.attachments.get(user.id);
+			let userattachments: MRE.Actor[] = this.attachments.get(user.id);
 
 			//added this looping through attachment array
 			for (const attacheditem of userattachments ) {
