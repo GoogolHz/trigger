@@ -1,9 +1,9 @@
-FROM node:10.16-alpine
+FROM node:14-alpine
+
 WORKDIR /opt/mre
 
 ENV PORT=80
-ENV BASE_URL=http://grabbable.openode.dev/
-
+ENV BASE_URL=http://trigger.openode.dev/
 
 COPY package*.json ./
 RUN ["npm", "install", "--unsafe-perm"]

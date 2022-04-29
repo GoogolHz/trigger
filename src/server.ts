@@ -22,7 +22,7 @@ dotenv.config();
 function runApp() {
 	// Start listening for connections, and serve static files.
 	const server = new MRE.WebHost({
-		baseUrl: 'http://grabbable.openode.dev',
+		baseUrl: 'http://trigger.openode.dev',
 		baseDir: resolvePath(__dirname, '../public')
 	});
 

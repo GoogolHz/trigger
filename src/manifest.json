@@ -1,7 +1,7 @@
 {
-	"name": "Grabbable",
+	"name": "trigger",
 	"author": "GoogolHz",
 	"license": "MIT",
-	"repositoryUrl": "https://github.com/GoogolHz/grabbable",
+	"repositoryUrl": "https://github.com/GoogolHz/trigger",
 	"optionalPermissions": ["user-interaction"]
 }

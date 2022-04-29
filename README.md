@@ -1,4 +1,4 @@
-Creates grabbable instances of content pack items
+Creates trigger instances of content pack items
 
 ## Setup
 
