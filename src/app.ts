@@ -9,8 +9,7 @@
 */
 
 import * as MRE from '@microsoft/mixed-reality-extension-sdk';
-
-// import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 
 // import delay from './utils/delay';
 
@@ -19,44 +18,155 @@ import * as MRE from '@microsoft/mixed-reality-extension-sdk';
  */
 import { UserSyncFix } from './sync-fix'
 
+const DEBUG = false;
 
 /**
  * The structure of a hat entry in the hat database.
  */
-type ArtifactDescriptor = {
+
+ type artifactDescriptor = {
+ 	displayName: string;  // name of actor
+	resourceURL: string;  // glb/gltf resource url
+ 	resourceId: string;  // AltVR artifact ID
+ 	attachPoint: string;
+ 	grabbable: boolean;
+ 	rigidBody: boolean;
+	exclusive: boolean;
+ 	scale: {
+ 		x: number;
+ 		y: number;
+ 		z: number;
+ 	};
+ 	rotation: {
+ 		x: number;
+ 		y: number;
+ 		z: number;
+ 	};
+ 	position: {
+ 		x: number;
+ 		y: number;
+ 		z: number;
+ 	};
+	menuScale: {
+		x: number;
+		y: number;
+		z: number;
+	};
+	menuRotation: {
+		x: number;
+		y: number;
+		z: number;
+	};
+	menuPosition: {
+		x: number;
+		y: number;
+		z: number;
+	};
+ };
+
+type triggerDescriptor = {
 	displayName: string;
-	resourceName: string;
-	resourceId: string;
-	attachPoint: string;
-	trigger: boolean;
-	rigidBody: boolean;
-	scale: {
-		x: number;
-		y: number;
-		z: number;
+	triggerType: string; // Menu, Box, Capsule, Cylindar, Plane, Sphere, Custom
+	isVisible: boolean;
+	triggerTransform: {
+    dimensions: {
+      x: number;
+      y: number;
+      z: number;
+    };
+		scale: {
+			x: number;
+			y: number;
+			z: number;
+		};
+		rotation: {
+			x: number;
+			y: number;
+			z: number;
+		};
+		position: {
+			x: number;
+			y: number;
+			z: number;
+		};
 	};
-	rotation: {
-		x: number;
-		y: number;
-		z: number;
-	};
-	position: {
-		x: number;
-		y: number;
-		z: number;
-	};
+	triggeredOnEnter: triggeredOnEvent;
+	triggeredOnExit: triggeredOnEvent;
 };
+
+type menuDescriptor = {
+  displayName: string;  // name of actor
+  resourceURL: string;  // glb/gltf resource url
+  resourceId: string;  // AltVR artifact ID
+  options: {
+    previewMargin: number;
+  }
+  attachPoint: string;
+  grabbable: boolean;
+  exclusive: boolean;
+  scale: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  rotation: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  menuScale: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  menuRotation: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  menuPosition: {
+    x: number;
+    y: number;
+    z: number;
+  };
+};
+
+type triggeredOnEvent = {
+  killResources: string[];
+  spawnResources: artifactDatabase;
+}
+
+//[key: string] is an index signature
 
 /**
  * The structure of the hat database.
  */
-type ArtifactDatabase = {
-	[key: string]: ArtifactDescriptor;
+type artifactDatabase = {
+	[key: string]: artifactDescriptor;
+};
+
+type TriggerDatabase = {
+	[key: string]: triggerDescriptor;
+};
+
+
+
+type TriggerMREDatabase = {
+  [key: string]: triggerDescriptor | artifactDescriptor | string[] | menuDescriptor;
+  // Triggers: triggerDescriptor;
+  // Artifacts: artifactDescriptor;
+  // SpawnAtStartup: string[];
+  // MenuSetup: menuDescriptor;
 };
 
 // // Load the database of hats.
 // // eslint-disable-next-line @typescript-eslint/no-var-requires
-// const ArtifactDatabase: ArtifactDatabase = require('../public/hats.json');
+// const TriggerDatabase: TriggerDatabase = require('../public/hats.json');
 
 
 //======================================
@@ -92,6 +202,11 @@ interface BodyTracker {
 	spinemidTrack: MRE.Actor;
 }
 
+type AttachedActor = {
+	resourceId: String;
+	actor:  MRE.Actor;
+}
+
 
 
 /**
@@ -104,7 +219,7 @@ export default class trigger {
 	 */
 	private syncfix = new UserSyncFix(5000); // sync every 5000 milliseconds
 
-	// console.log("ZZZzzzz n    x  XXXXX");
+
 	/*
 	 * Track which attachments belongs to which user
 	 * NOTE: The MRE.Guid will be the ID of the user.  Maps are more efficient with Guids for keys
@@ -119,60 +234,24 @@ export default class trigger {
 	private text: MRE.Actor = null;
 	private kitItemStylus: MRE.Actor = null;
 
-	// private styleZ: MRE.Actor = null;
-	// private styleY: MRE.Actor = null;
-	// private styleX: MRE.Actor = null;
-
 	// for triggers
 	private userTrackers = new Map<MRE.Guid, BodyTracker>();
 
-	// private fractCount = 0;
-
 	private assets: MRE.AssetContainer;
 
-	// For the database of artifacts.
-	private artifactDB: ArtifactDatabase;
+	// For the database of triggers.
+  private triggerDB: TriggerDatabase; //TriggerDatabase;
+  private triggerMREDB: TriggerMREDatabase; //TriggerDatabase;
+  private artifactDB: ArtifactDatabase; //TriggerDatabase;
 
+	private previewMargin = 1.5; // spacing between preview objects
 
 	private contentPack: string;
-	// private contentPack
-	// public rolesString: string;
-	// public rolesArray: string[];
-	//
-	// public wingsString: string;
-	// public wingsArray: string[];
-	//
-	// public chokerString: string;
-	// public chokerArray: string[];
 
-	// public
-
-	private videoWand: MRE.Actor;
-	private fractalTransA: MRE.Actor;
-	private fractalTransB: MRE.Actor;
-	private fractalTransC: MRE.Actor;
-	private boat: MRE.Actor;
-	private holder: MRE.Actor;
-	private doors: MRE.Actor;
-
+	private TriggerConfig: Promise<void> = null;
 
 	public PI = Math.PI;
 	public TAU = Math.PI * 2;
-
-	// private model: MRE.Actor = null;
-	// private materials: MRE.Material[] = [];
-	// private spamRoot: MRE.Actor;
-
-	/**
-	 * From GrabTest Functional test
-	 *
-	 */
-
-	// public expectedResultDescription = "Different trigger items.";
-	// private state = 0;
-	// private clickCount = 0;
-
-	// private assets: MRE.AssetContainer;
 
 	private readonly SCALE = 0.2;
 
@@ -217,15 +296,33 @@ export default class trigger {
 	// 	}
 	// }
 
-	/* eslint-disable */
+  /* eslint-disable */
 	constructor(private context: MRE.Context, private params: MRE.ParameterSet, private baseUrl: string) {
 		// constructor(private context: MRE.Context, protected baseUrl: string) {
 		// eslint-disable-next-line
-    console.log("Test");
-		this.context.onStarted(() => this.started());
-	}
-	/* eslint-enable */
+		console.log(">>>	constructor()");
 
+		this.contentPack = String(this.params.cpack || this.params.content_pack);
+
+		if (this.contentPack) {
+			// Specify a url to a JSON file
+			// https://account.altvr.com/content_packs/1187493048011980938
+			// e.g. ws://10.0.1.89:3901?content_pack=1187493048011980938
+			fetch(`https://account.altvr.com/api/content_packs/${this.contentPack}/raw.json`, { method: "Get" })
+				.then((response: any) => response.json())
+				.then((json: any) => {
+					if(DEBUG){ console.log(json); }
+					// this.artifactDB = Object.assign({}, json);
+          this.triggerMREDB = Object.assign({}, json);
+          // this.triggerMREDB = JSON.parse(JSON.stringify(json));
+					console.log('cpack: ', JSON.stringify(this.triggerMREDB, null, '\t'));
+					// this.context.onStarted(() => this.started());
+					this.started();
+				});
+		}
+	}
+
+	/* eslint-enable */
 
 	//==========================
 	// Synchronization function for attachments
@@ -311,211 +408,39 @@ export default class trigger {
 		// 			this.activeTestFactory = Factories[this.activeTestName];
 		// 			this.setupRunner();
 		// 		}
-		this.contentPack = this.params.cpack as string;
-
-		console.log('cpack: ', this.contentPack);
+		// this.contentPack = this.params.cpack as string;
+    //
+		// console.log('cpack: ', this.contentPack);
 		// Load the database of artifacts
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		// this.artifactDB = require(`https://account.altvr.com/api/content_packs/${this.contentPack}/raw`);
 
-		// this.videoWand = MRE.Actor.CreateFromLibrary(this.context, {
-		// 	// resourceId: 'artifact:1768257866851943023', // fractal
-		// 	resourceId: 'artifact:1794380576673759640',  //videoLumaWand
-		// 	// resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
-		// 	// resourceId: 'artifact:1816236824872354109',  //videoWand
-		// 	actor: {
-		// 		name: "videoWand",
-		// 		collider: { geometry: { shape: MRE.ColliderType.Auto } },
-		// 		transform: {
-		// 			local: {
-		// 				scale: { x: 1, y: 1, z: 1 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-		// 			},
-		// 			app: {
-		// 				// position: { x:40, y:1, z:40 },
-		// 				position: { x: 0, y: 5, z: 0 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
-		// 			}
-		// 		},
-		// 		// rigidBody: {
-		// 		// 	mass: 1,
-		// 		// },
-		// 		// subscriptions: ['transform'],
-		// 	}
-		// });
-		//
-		// this.videoWand.created().then(() => this.videoWand.trigger = true);
-		//
-		// this.fractalTransA = MRE.Actor.CreateFromLibrary(this.context, {
-		// 	resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
-		// 	actor: {
-		// 		name: "fractal1",
-		// 		collider: { geometry: { shape: MRE.ColliderType.Auto } },
-		// 		transform: {
-		// 			local: {
-		// 				scale: { x: 6, y: 6, z: 6 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-		// 			},
-		// 			app: {
-		// 				// position: { x:40, y:1, z:40 },
-		// 				position: { x: 0, y: 0, z: 0 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
-		// 			}
-		// 		}
-		// 	}
-		// });
-		// this.fractalTransA.created().then(() => this.fractalTransA.trigger = true);
-		//
-		// this.fractalTransB = MRE.Actor.CreateFromLibrary(this.context, {
-		// 	resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
-		// 	actor: {
-		// 		name: "fractal2",
-		// 		collider: { geometry: { shape: MRE.ColliderType.Auto } },
-		// 		transform: {
-		// 			local: {
-		// 				scale: { x: 5, y: 5, z: 5 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-		// 			},
-		// 			app: {
-		// 				position: { x: 0, y: 0, z: 0 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
-		// 			}
-		// 		}
-		// 	}
-		// });
-		// this.fractalTransB.created().then(() => this.fractalTransB.trigger = true);
-		//
-		// this.fractalTransC = MRE.Actor.CreateFromLibrary(this.context, {
-		// 	resourceId: 'artifact:1772090341776688049',  //Luma Hue Ksqrd
-		// 	actor: {
-		// 		name: "fractal2",
-		// 		collider: { geometry: { shape: MRE.ColliderType.Auto } },
-		// 		transform: {
-		// 			local: {
-		// 				scale: { x: 5, y: 5, z: 5 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-		// 			},
-		// 			app: {
-		// 				position: { x: 0, y: 0, z: 0 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(Math.PI, 0, 0)
-		// 			}
-		// 		}
-		// 	}
-		// });
-		// this.fractalTransC.created().then(() => this.fractalTransC.trigger = true);
-
-		this.boat = MRE.Actor.CreateFromLibrary(this.context, {
-			resourceId: 'artifact:1140475624821883478',  //holder
-			actor: {
-				name: "boat",
-				collider: { geometry: { shape: MRE.ColliderType.Auto } },
-				transform: {
-					local: {
-						scale: { x: 1.25, y: 1.25, z: 1.25 },
-						position: { x: 0, y: 0, z: 0 },
-						rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-					},
-					app: {
-						position: { x: 0, y: -.55, z: 0 },
-						rotation: MRE.Quaternion.FromEulerAngles(-2 * MRE.DegreesToRadians, 0, 0)
-					}
-				}
-			}
-		});
-
-
-		this.holder = MRE.Actor.CreateFromLibrary(this.context, {
-			resourceId: 'artifact:1943340717036274377',  //holder
-			actor: {
-				name: "holder",
-				parentId: this.boat.id,
-				collider: { geometry: { shape: MRE.ColliderType.Auto } },
-				transform: {
-					local: {
-						scale: { x: 1, y: 1, z: 1 },
-						position: { x: 0, y: 1.65, z: .25 },
-						rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
-					},
-					app: {
-						rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-					}
-				},
-				appearance: { enabled: false }
-			}
-		});
-		// this.holder.created().then(() => this.holder.trigger = true);
-
-		this.doors = MRE.Actor.CreateFromLibrary(this.context, {
-			resourceId: 'artifact:1943376618743398910',  //holder
-			actor: {
-				name: "doors",
-				parentId: this.boat.id,
-				collider: { geometry: { shape: MRE.ColliderType.Auto } },
-				transform: {
-					local: {
-						scale: { x: 1, y: 1, z: 1 },
-						position: { x: 0, y: -.375, z: .25 },
-						rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
-					},
-					app: {
-						rotation: MRE.Quaternion.FromEulerAngles(0, 0, 0)
-					}
-				},
-				appearance: { enabled: false }
-			}
-		});
-
-		this.boat.created().then(() => {
-			this.boat.trigger = true;
-			this.boat.onGrab('begin', () => {
-				// this.doors.appearance.enabled = false;
-				this.doors.collider.enabled = true;
-				this.doors.transform.local.position.y = 1.75;
-				// this.state = 1;
-				// this.cycleState();
-			});
-			this.boat.onGrab('end', () => {
-				// this.doors.collider.enabled = false;
-				// this.doors.appearance.enabled = false;
-				this.doors.transform.local.position.y = -.375;
-
-
-				// this.state = 2;
-				// this.cycleState();
-			});
-		});
-
-
-		// this.doors.created().then(() => this.doors.trigger = true);
-
-
-
 
 		//Uncomment this next block to trace values
-		this.text = MRE.Actor.Create(this.context, {
-			actor: {
-				name: 'Text',
-				parentId: this.boat.id,
-				transform: {
-					// local: {
-					// 	scale: { x: 1, y: 1, z: 1 },
-					// 	// position: { x: 0, y: .5, z: -3 },
-					// 	rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
-					// },
-					app: {
-						position: { x: .04, y: .59, z: -2.98 },
-						rotation: MRE.Quaternion.FromEulerAngles(-10 * MRE.DegreesToRadians, 0, 0)
-					}
-				},
-				text: {
-					contents: `Swash     buckler`,
-					anchor: MRE.TextAnchorLocation.MiddleCenter,
-					color: { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
-					height: 0.125
-				},
-				appearance: { enabled: true }
-			}
-		});
+		// this.text = MRE.Actor.Create(this.context, {
+		// 	actor: {
+		// 		name: 'Text',
+		// 		parentId: this.boat.id,
+		// 		transform: {
+		// 			// local: {
+		// 			// 	scale: { x: 1, y: 1, z: 1 },
+		// 			// 	// position: { x: 0, y: .5, z: -3 },
+		// 			// 	rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
+		// 			// },
+		// 			app: {
+		// 				position: { x: .04, y: .59, z: -2.98 },
+		// 				rotation: MRE.Quaternion.FromEulerAngles(-10 * MRE.DegreesToRadians, 0, 0)
+		// 			}
+		// 		},
+		// 		text: {
+		// 			contents: `Swash     buckler`,
+		// 			anchor: MRE.TextAnchorLocation.MiddleCenter,
+		// 			color: { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
+		// 			height: 0.125
+		// 		},
+		// 		appearance: { enabled: true }
+		// 	}
+		// });
 
 
 		//=============================
@@ -554,17 +479,20 @@ export default class trigger {
 	// use () => {} syntax here to get proper scope binding when called via setTimeout()
 	// if async is required, next line becomes private startedImpl = async () => {
 	private startedImpl = async () => {
-		// Preload all the hat models.
-		await this.preloadArtifacts();
+		// Parse json data and preload artifacts.
+		await this.preloadGLTFs();
 		// Show the hat menu.
 		// this.showHatMenu();
+		console.log("GLTFs Preloaded");
+		this.triggerFactory();
 	}
+
 
 	/**
 	 * Preload all hat resources. This makes instantiating them faster and more efficient.
 	 */
-	private preloadArtifacts() {
-
+	private preloadGLTFs() {
+    // this needs some rearanging
 
 		// Loop over the Content Pack database, preloading each resource.
 		// Return a promise of all the in-progress load promises. This
@@ -572,29 +500,137 @@ export default class trigger {
 		// before continuing.
 		// ${this.baseUrl}/${hatRecord.resourceName}`)
 		// console.log(`baseURL: ${this.baseUrl}`);
+    // const artifacts = this.artifactMREDB["Artifacts"];
+    // console.log("***> Artifacts", JSON.stringify(artifacts, null, '\t'));
 		return Promise.all(
-			Object.keys(this.artifactDB).map(artId => {
-				const artRecord = this.artifactDB[artId];
-				if (artRecord.resourceName) {
-					return this.assets.loadGltf(
-						`${artRecord.resourceName}`)
-						.then(assets => {
-							this.prefabs[artId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
-						})
-						.catch(e => MRE.log.error("app", e));
-					// } else if (artRecord.resourceId){
+      Object.keys(this.artifactMREDB).map(elementId => {
+        const elementRecord = this.artifactMREDB[elementId];
+        if (elementRecord)
+  			Object.keys(artifacts).map(artifactId => {
+          const artRecord = this.artifactDB[artId];
+          if (artRecord.resourceName) {
+            return this.assets.loadGltf(
+              `${artRecord.resourceName}`)
+              .then(assets => {
+                this.prefabs[artId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
+              })
+              .catch(e => MRE.log.error("app", e));
+          } else {
+            return Promise.resolve();
+          }
+  			})
+      })
+    );
+	}
 
-				} else {
-					return Promise.resolve();
+  private triggerFactory() {
+		let triggers = Object.entries(this.triggerDB);
+
+    let makeMenu = false;
+  	let menu: MRE.Actor = null;
+
+
+    triggers.forEach(([key, value]) => {
+      let button;
+      let trigger: MRE.Actor = null;
+      let trigShapeType: String = value.triggerType;
+      let trigTransform = value.triggerTransform;
+      let triggeredOnEnter: triggeredOnEvent = value.triggeredOnEnter;
+      let triggeredOnExit: triggeredOnEvent = value.triggeredOnExit;
+
+      if (trigShapeType === "Menu") {
+        makeMenu=true;
+      } else {
+        trigger = MRE.Actor.CreatePrimitive(this.assets, {
+          definition: {
+            shape: MRE.PrimitiveShape[triggerShapeType],
+            dimensions: trigTransform.dimensions // make sure there's a gap
+          },
+          addCollider: true,
+          actor: {
+            transform: {
+              local: {
+                position: trigTransform.position,
+                scale: trigTransform.scale, // not affected by custom scale
+                rotation: trigTransform.rotation
+              }
+            },
+            appearance: {
+              enabled: true
+            }
+          }
+        });
+        // trigger.setBehavior(MRE.ButtonBehavior).onClick(user => this.wearAccessory(key, user.id));
+        trigger.created().then(() => {
+          trigger.collider.isTrigger = true;
+          trigger.collider.onTrigger('trigger-enter', (actor) => this.triggeredActions(actor, triggeredOnEnter));
+          trigger.collider.onTrigger('trigger-exit',  (actor) => this.triggeredActions(actor, triggeredOnExit));
+        });
+
+      }
+      //
+      // for (const k of Object.keys(value)) {
+      //   // if (k === "triggerType"){
+      //   //   triggerType = value.k;
+      //   //   if (triggerType === "Menu") {
+      //   //     makeMenu=true;
+      //   //   }
+      //     // switch (value[k]) {
+      //     //   case 'Menu':
+      //     //     makeMenu=true;
+      //     //     break;
+      //     //   case 'Box':
+      //     //     break;
+      //     //   case 'Capsule':
+      //     //     break;
+      //     //   case 'Cylindar':
+      //     //     break;
+      //     //   case 'Plane':
+      //     //     break;
+      //     //   case 'Sphere':
+      //     //     break;
+      //     //   case 'Custom':
+      //     //     break;
+      //     //   default:
+      //     //     console.log("error, triggerType requires one of these $values: 'Menu, Box, Capsule, Cylindar, Plane, Sphere, Custom' ")
+      //     // }
+      //   // }
+      // }
+      //
+
+    });
+
+    if (makeMenu) {
+			console.log("makeMenu");
+      // commented out until this part is fixed
+			// Create a parent object for all the menu items.
+			menu = MRE.Actor.Create(this.context);
+
+			// check for options first since order isn't guaranteed in a dict
+			for (const k of Object.keys(this.triggerDB)) {
+        if (k == "MenuSetup"){
+          const menuSetup = this.triggerDB[k];
+
+				// if (k == "options"){
+					// const options = this.triggerDB[k]
+					if (menuSetup.options.previewMargin){
+						this.previewMargin = menuSetup.options.previewMargin;
+					}
 				}
-			}));
-	}
-
-	private loadArtifacts() {
-
-
+			}
+		}
 
 	}
+
+  /**
+  	 * Instantiate a hat and attach it to the avatar's head.
+  	 * @param hatId The id of the hat in the hat database.
+  	 * @param userId The id of the user we will attach the hat to.
+  	 */
+  private triggeredActions(tracker: MRE.Actor, triggered: triggeredOnEvent) {
+
+
+  }
 
 
 	//====================================
