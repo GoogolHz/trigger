@@ -24,29 +24,29 @@ const DEBUG = false;
  * The structure of a hat entry in the hat database.
  */
 
- type artifactDescriptor = {
- 	displayName: string;  // name of actor
+type artifactDescriptor = {
+  displayName: string;  // name of actor
 	resourceURL: string;  // glb/gltf resource url
- 	resourceId: string;  // AltVR artifact ID
- 	attachPoint: string;
- 	grabbable: boolean;
- 	rigidBody: boolean;
+	resourceId: string;  // AltVR artifact ID
+	attachPoint: string;
+	grabbable: boolean;
+	rigidBody: boolean;
 	exclusive: boolean;
- 	scale: {
- 		x: number;
- 		y: number;
- 		z: number;
- 	};
- 	rotation: {
- 		x: number;
- 		y: number;
- 		z: number;
- 	};
- 	position: {
- 		x: number;
- 		y: number;
- 		z: number;
- 	};
+	scale: {
+		x: number;
+		y: number;
+		z: number;
+	};
+	rotation: {
+		x: number;
+		y: number;
+		z: number;
+	};
+	position: {
+		x: number;
+		y: number;
+		z: number;
+	};
 	menuScale: {
 		x: number;
 		y: number;
@@ -138,7 +138,7 @@ type menuDescriptor = {
 
 type triggeredOnEvent = {
   killResources: string[];
-  spawnResources: artifactDatabase;
+  spawnResources: string[];
 }
 
 //[key: string] is an index signature
@@ -150,19 +150,34 @@ type artifactDatabase = {
 	[key: string]: artifactDescriptor;
 };
 
-type TriggerDatabase = {
+type triggerDatabase = {
 	[key: string]: triggerDescriptor;
 };
 
 
+// [key: string]: triggerDescriptor | artifactDescriptor | string[] | menuDescriptor;
 
-type TriggerMREDatabase = {
-  [key: string]: triggerDescriptor | artifactDescriptor | string[] | menuDescriptor;
-  // Triggers: triggerDescriptor;
-  // Artifacts: artifactDescriptor;
-  // SpawnAtStartup: string[];
-  // MenuSetup: menuDescriptor;
+type triggerMREDatabase = {
+  Triggers: triggerDatabase;
+  Artifacts: artifactDatabase;
+  spawnAtStartup: string[];
+  MenuSetup: menuDescriptor;
 };
+
+type primitiveShapes = {
+  'Box': MRE.PrimitiveShape.Box,
+  'Capsule': MRE.PrimitiveShape.Capsule,
+  'Cylinder': MRE.PrimitiveShape.Cylinder,
+  'Plane': MRE.PrimitiveShape.Plane,
+  'Sphere': MRE.PrimitiveShape.Sphere
+}
+
+// type TriggerMREDatabase = {
+//   Triggers: triggerDescriptor;
+//   Artifacts: artifactDescriptor;
+//   SpawnAtStartup: string[];
+//   MenuSetup: menuDescriptor;
+// };
 
 // // Load the database of hats.
 // // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -240,15 +255,26 @@ export default class trigger {
 	private assets: MRE.AssetContainer;
 
 	// For the database of triggers.
-  private triggerDB: TriggerDatabase; //TriggerDatabase;
-  private triggerMREDB: TriggerMREDatabase; //TriggerDatabase;
-  private artifactDB: ArtifactDatabase; //TriggerDatabase;
+  private triggerDB: triggerDatabase; //TriggerDatabase;
+  private triggerMREDB: triggerMREDatabase; //TriggerDatabase;
+  private artifactDB: artifactDatabase; //TriggerDatabase;
+  private menuSetup: menuDescriptor;
 
 	private previewMargin = 1.5; // spacing between preview objects
 
 	private contentPack: string;
 
 	private TriggerConfig: Promise<void> = null;
+
+  private primitiveShapes: primitiveShapes;
+
+  // private primitiveShapes = {
+  //   'Box': MRE.PrimitiveShape.Box,
+  //   'Capsule': MRE.PrimitiveShape.Capsule,
+  //   'Cylinder': MRE.PrimitiveShape.Cylinder,
+  //   'Plane': MRE.PrimitiveShape.Plane,
+  //   'Sphere': MRE.PrimitiveShape.Sphere
+  // };
 
 	public PI = Math.PI;
 	public TAU = Math.PI * 2;
@@ -260,40 +286,40 @@ export default class trigger {
 	}
 
 	// private spawnActors(count: number) {
-	// 	if (this.spamRoot) {
-	// 		this.spamRoot.destroy();
-	// 	}
+	//	if (this.spamRoot) {
+	//		this.spamRoot.destroy();
+	//	}
 	//
-	// 	const ball = this.assets.meshes.find(m => m.name === 'ball')
-	// 		|| this.assets.createSphereMesh('ball', 0.05);
+	//	const ball = this.assets.meshes.find(m => m.name === 'ball')
+	//		|| this.assets.createSphereMesh('ball', 0.05);
 	//
-	// 	this.spamRoot = MRE.Actor.Create(this.context, {
-	// 		actor: {
-	// 			name: 'spamRoot',
-	// 			transform: { local: { position: { y: 1, z: -1 } } }
-	// 		}
-	// 	});
+	//	this.spamRoot = MRE.Actor.Create(this.context, {
+	//		actor: {
+	//			name: 'spamRoot',
+	//			transform: { local: { position: { y: 1, z: -1 } } }
+	//		}
+	//	});
 	//
-	// 	for (let i = 0; i < count; i++) {
-	// 		let ramp = MRE.Actor.CreateFromLibrary(this.context, {
-	// 			resourceId: 'artifact:1703071908439786046',
-	// 			actor: {
-	// 				name: `ramp${i}`,
-	// 				collider: { geometry: { shape: MRE.ColliderType.Auto } },
-	// 				// appearance: {
-	// 				// 	// meshId: boxMesh.id,
-	// 				// 	materialId: this.materials[Math.floor(Math.random() * this.materials.length)].id
-	// 				// },
-	// 				transform: {
-	// 					local: {
-	// 						scale: { x: 0.5, y: 0.5, z: 0.5 },
-	// 						position: { x: 0, y: i*.15, z: -.5 }
-	// 					}
-	// 				}
-	// 			}
-	// 		});
-	// 		ramp.created().then(() => ramp.trigger = true);
-	// 	}
+	//	for (let i = 0; i < count; i++) {
+	//		let ramp = MRE.Actor.CreateFromLibrary(this.context, {
+	//			resourceId: 'artifact:1703071908439786046',
+	//			actor: {
+	//				name: `ramp${i}`,
+	//				collider: { geometry: { shape: MRE.ColliderType.Auto } },
+	//				// appearance: {
+	//				//	// meshId: boxMesh.id,
+	//				//	materialId: this.materials[Math.floor(Math.random() * this.materials.length)].id
+	//				// },
+	//				transform: {
+	//					local: {
+	//						scale: { x: 0.5, y: 0.5, z: 0.5 },
+	//						position: { x: 0, y: i*.15, z: -.5 }
+	//					}
+	//				}
+	//			}
+	//		});
+	//		ramp.created().then(() => ramp.trigger = true);
+	//	}
 	// }
 
   /* eslint-disable */
@@ -402,12 +428,12 @@ export default class trigger {
 		// this.chokerArray = this.chokerString.split(',');
 
 		// if (this.params.roles === undefined) {
-		// 			this.roles = "";
-		// 		} else {
-		// 			this.activeTestName = this.params.test as string;
-		// 			this.activeTestFactory = Factories[this.activeTestName];
-		// 			this.setupRunner();
-		// 		}
+		//			this.roles = "";
+		//		} else {
+		//			this.activeTestName = this.params.test as string;
+		//			this.activeTestFactory = Factories[this.activeTestName];
+		//			this.setupRunner();
+		//		}
 		// this.contentPack = this.params.cpack as string;
     //
 		// console.log('cpack: ', this.contentPack);
@@ -418,28 +444,28 @@ export default class trigger {
 
 		//Uncomment this next block to trace values
 		// this.text = MRE.Actor.Create(this.context, {
-		// 	actor: {
-		// 		name: 'Text',
-		// 		parentId: this.boat.id,
-		// 		transform: {
-		// 			// local: {
-		// 			// 	scale: { x: 1, y: 1, z: 1 },
-		// 			// 	// position: { x: 0, y: .5, z: -3 },
-		// 			// 	rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
-		// 			// },
-		// 			app: {
-		// 				position: { x: .04, y: .59, z: -2.98 },
-		// 				rotation: MRE.Quaternion.FromEulerAngles(-10 * MRE.DegreesToRadians, 0, 0)
-		// 			}
-		// 		},
-		// 		text: {
-		// 			contents: `Swash     buckler`,
-		// 			anchor: MRE.TextAnchorLocation.MiddleCenter,
-		// 			color: { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
-		// 			height: 0.125
-		// 		},
-		// 		appearance: { enabled: true }
-		// 	}
+		//	actor: {
+		//		name: 'Text',
+		//		parentId: this.boat.id,
+		//		transform: {
+		//			// local: {
+		//			//	scale: { x: 1, y: 1, z: 1 },
+		//			//	// position: { x: 0, y: .5, z: -3 },
+		//			//	rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
+		//			// },
+		//			app: {
+		//				position: { x: .04, y: .59, z: -2.98 },
+		//				rotation: MRE.Quaternion.FromEulerAngles(-10 * MRE.DegreesToRadians, 0, 0)
+		//			}
+		//		},
+		//		text: {
+		//			contents: `Swash     buckler`,
+		//			anchor: MRE.TextAnchorLocation.MiddleCenter,
+		//			color: { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
+		//			height: 0.125
+		//		},
+		//		appearance: { enabled: true }
+		//	}
 		// });
 
 
@@ -500,50 +526,47 @@ export default class trigger {
 		// before continuing.
 		// ${this.baseUrl}/${hatRecord.resourceName}`)
 		// console.log(`baseURL: ${this.baseUrl}`);
-    // const artifacts = this.artifactMREDB["Artifacts"];
-    // console.log("***> Artifacts", JSON.stringify(artifacts, null, '\t'));
+    this.artifactDB = this.triggerMREDB["Artifacts"];
+    console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
 		return Promise.all(
-      Object.keys(this.artifactMREDB).map(elementId => {
-        const elementRecord = this.artifactMREDB[elementId];
-        if (elementRecord)
-  			Object.keys(artifacts).map(artifactId => {
-          const artRecord = this.artifactDB[artId];
-          if (artRecord.resourceName) {
-            return this.assets.loadGltf(
-              `${artRecord.resourceName}`)
-              .then(assets => {
-                this.prefabs[artId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
-              })
-              .catch(e => MRE.log.error("app", e));
-          } else {
-            return Promise.resolve();
-          }
-  			})
-      })
+			Object.keys(this.artifactDB).map(artifactId => {
+        const artRecord = this.artifactDB[artifactId];
+        if (artRecord.resourceId) {
+          return this.assets.loadGltf(
+            `${artRecord.resourceId}`)
+            .then(assets => {
+              this.prefabs[artifactId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
+            })
+            .catch(e => MRE.log.error("app", e));
+        } else {
+          return Promise.resolve();
+        }
+			})
     );
 	}
 
   private triggerFactory() {
-		let triggers = Object.entries(this.triggerDB);
+    this.triggerDB = this.triggerMREDB["Triggers"];
+		const triggers = Object.entries(this.triggerDB);
 
     let makeMenu = false;
-  	let menu: MRE.Actor = null;
+    let menu: MRE.Actor = null;
 
 
     triggers.forEach(([key, value]) => {
-      let button;
+      // let button;
       let trigger: MRE.Actor = null;
-      let trigShapeType: String = value.triggerType;
-      let trigTransform = value.triggerTransform;
-      let triggeredOnEnter: triggeredOnEvent = value.triggeredOnEnter;
-      let triggeredOnExit: triggeredOnEvent = value.triggeredOnExit;
+      const triggerShapeType: string = value.triggerType;
+      const trigTransform = value.triggerTransform;
+      const triggeredOnEnter: triggeredOnEvent = value.triggeredOnEnter;
+      const triggeredOnExit: triggeredOnEvent = value.triggeredOnExit;
 
-      if (trigShapeType === "Menu") {
-        makeMenu=true;
+      if (triggerShapeType === "Menu") {
+        makeMenu = true;
       } else {
         trigger = MRE.Actor.CreatePrimitive(this.assets, {
           definition: {
-            shape: MRE.PrimitiveShape[triggerShapeType],
+            shape: this.primitiveShapes[triggerShapeType as keyof primitiveShapes],
             dimensions: trigTransform.dimensions // make sure there's a gap
           },
           addCollider: true,
@@ -568,65 +591,26 @@ export default class trigger {
         });
 
       }
-      //
-      // for (const k of Object.keys(value)) {
-      //   // if (k === "triggerType"){
-      //   //   triggerType = value.k;
-      //   //   if (triggerType === "Menu") {
-      //   //     makeMenu=true;
-      //   //   }
-      //     // switch (value[k]) {
-      //     //   case 'Menu':
-      //     //     makeMenu=true;
-      //     //     break;
-      //     //   case 'Box':
-      //     //     break;
-      //     //   case 'Capsule':
-      //     //     break;
-      //     //   case 'Cylindar':
-      //     //     break;
-      //     //   case 'Plane':
-      //     //     break;
-      //     //   case 'Sphere':
-      //     //     break;
-      //     //   case 'Custom':
-      //     //     break;
-      //     //   default:
-      //     //     console.log("error, triggerType requires one of these $values: 'Menu, Box, Capsule, Cylindar, Plane, Sphere, Custom' ")
-      //     // }
-      //   // }
-      // }
-      //
 
     });
 
     if (makeMenu) {
 			console.log("makeMenu");
-      // commented out until this part is fixed
 			// Create a parent object for all the menu items.
+      this.menuSetup = this.triggerMREDB["MenuSetup"];
 			menu = MRE.Actor.Create(this.context);
-
-			// check for options first since order isn't guaranteed in a dict
-			for (const k of Object.keys(this.triggerDB)) {
-        if (k == "MenuSetup"){
-          const menuSetup = this.triggerDB[k];
-
-				// if (k == "options"){
-					// const options = this.triggerDB[k]
-					if (menuSetup.options.previewMargin){
-						this.previewMargin = menuSetup.options.previewMargin;
-					}
-				}
+			if (this.menuSetup.options.previewMargin){
+				this.previewMargin = this.menuSetup.options.previewMargin;
 			}
 		}
 
 	}
 
   /**
-  	 * Instantiate a hat and attach it to the avatar's head.
-  	 * @param hatId The id of the hat in the hat database.
-  	 * @param userId The id of the user we will attach the hat to.
-  	 */
+ 	 * Instantiate a hat and attach it to the avatar's head.
+ 	 * @param hatId The id of the hat in the hat database.
+ 	 * @param userId The id of the user we will attach the hat to.
+ 	 */
   private triggeredActions(tracker: MRE.Actor, triggered: triggeredOnEvent) {
 
 
@@ -689,101 +673,101 @@ export default class trigger {
 		// var nameArr = this.roles.split(',');
 
 		// this.rolesArray.forEach((role) => {
-		// 	if (role=="show") this.text.text.contents = JSON.stringify(usersRoles);
+		//	if (role=="show") this.text.text.contents = JSON.stringify(usersRoles);
 		//
-		// 	if (usersRoles.includes(role) || role == "all") {
-		// 		if (choker===null) {
-		// 			choker = MRE.Actor.CreateFromLibrary(this.context, {
-		// 				resourceId: 'artifact:1779817570145141338',
-		// 				actor: {
-		// 					attachment: {
-		// 						attachPoint: 'neck',
-		// 						userId: user.id
-		// 					},
-		// 					appearance: { enabled: true },
-		// 					transform: {
-		// 						local: {
-		// 							scale: { x:1.005, y:1.005, z:1.005 },
-		// 							position: {x:0, y:-.0275, z:-.005},
-		// 							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
-		// 						},
-		// 					}
-		// 				}
-		// 			});
-		// 			attached.push(choker);
-		// 		}
+		//	if (usersRoles.includes(role) || role == "all") {
+		//		if (choker===null) {
+		//			choker = MRE.Actor.CreateFromLibrary(this.context, {
+		//				resourceId: 'artifact:1779817570145141338',
+		//				actor: {
+		//					attachment: {
+		//						attachPoint: 'neck',
+		//						userId: user.id
+		//					},
+		//					appearance: { enabled: true },
+		//					transform: {
+		//						local: {
+		//							scale: { x:1.005, y:1.005, z:1.005 },
+		//							position: {x:0, y:-.0275, z:-.005},
+		//							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
+		//						},
+		//					}
+		//				}
+		//			});
+		//			attached.push(choker);
+		//		}
 		//
-		// 		if (wings===null) {
-		// 			wings = MRE.Actor.CreateFromLibrary(this.context, {
-		// 				resourceId: 'artifact:1781612302869463999',
-		// 				actor: {
-		// 					attachment: {
-		// 						attachPoint: 'spine-middle',
-		// 						userId: user.id
-		// 					},
-		// 					appearance: { enabled: true },
-		// 					transform: {
-		// 						local: {
-		// 							scale: { x:1, y:1, z:1 },
-		// 							position: {x:0, y:.1, z:-.18}, //-.06 .15
-		// 							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
-		// 						},
-		// 					}
-		// 				}
-		// 			});
-		// 			attached.push(wings);
-		// 		}
-		// 	}
+		//		if (wings===null) {
+		//			wings = MRE.Actor.CreateFromLibrary(this.context, {
+		//				resourceId: 'artifact:1781612302869463999',
+		//				actor: {
+		//					attachment: {
+		//						attachPoint: 'spine-middle',
+		//						userId: user.id
+		//					},
+		//					appearance: { enabled: true },
+		//					transform: {
+		//						local: {
+		//							scale: { x:1, y:1, z:1 },
+		//							position: {x:0, y:.1, z:-.18}, //-.06 .15
+		//							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
+		//						},
+		//					}
+		//				}
+		//			});
+		//			attached.push(wings);
+		//		}
+		//	}
 		// });
 
 		// this.chokerArray.forEach((role) => {
-		// 	if (usersRoles.includes(role) || role == "all") {
-		// 		if (choker===null) {
-		// 			choker = MRE.Actor.CreateFromLibrary(this.context, {
-		// 				resourceId: 'artifact:1779817570145141338',
-		// 				actor: {
-		// 					attachment: {
-		// 						attachPoint: 'neck',
-		// 						userId: user.id
-		// 					},
-		// 					appearance: { enabled: true },
-		// 					transform: {
-		// 						local: {
-		// 							scale: { x:1.005, y:1.005, z:1.005 },
-		// 							position: {x:0, y:-.0275, z:-.005},
-		// 							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
-		// 						},
-		// 					}
-		// 				}
-		// 			});
-		// 			attached.push(choker);
-		// 		}
-		// 	}
+		//	if (usersRoles.includes(role) || role == "all") {
+		//		if (choker===null) {
+		//			choker = MRE.Actor.CreateFromLibrary(this.context, {
+		//				resourceId: 'artifact:1779817570145141338',
+		//				actor: {
+		//					attachment: {
+		//						attachPoint: 'neck',
+		//						userId: user.id
+		//					},
+		//					appearance: { enabled: true },
+		//					transform: {
+		//						local: {
+		//							scale: { x:1.005, y:1.005, z:1.005 },
+		//							position: {x:0, y:-.0275, z:-.005},
+		//							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
+		//						},
+		//					}
+		//				}
+		//			});
+		//			attached.push(choker);
+		//		}
+		//	}
 		// });
 
 		// this.wingsArray.forEach((role) => {
-		// 	if (usersRoles.includes(role) || role == "all") {
-		// 		if (wings===null) {
-		// 			wings = MRE.Actor.CreateFromLibrary(this.context, {
-		// 				resourceId: 'artifact:1781612302869463999',
-		// 				actor: {
-		// 					attachment: {
-		// 						attachPoint: 'spine-middle',
-		// 						userId: user.id
-		// 					},
-		// 					appearance: { enabled: true },
-		// 					transform: {
-		// 						local: {
-		// 							scale: { x:1, y:1, z:1 },
-		// 							position: {x:0, y:.1, z:-.18}, //-.06 .15
-		// 							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
-		// 						},
-		// 					}
-		// 				}
-		// 			});
-		// 			attached.push(wings);
-		// 		}
-		// 	}
+		//	if (usersRoles.includes(role) || role == "all") {
+		//		if (wings===null) {
+		//			wings = MRE.Actor.CreateFromLibrary(this.context, {
+		//				resourceId: 'artifact:1781612302869463999',
+		//				actor: {
+		//					attachment: {
+		//						attachPoint: 'spine-middle',
+		//						userId: user.id
+		//					},
+		//					appearance: { enabled: true },
+		//					transform: {
+		//						local: {
+		//							scale: { x:1, y:1, z:1 },
+		//							position: {x:0, y:.1, z:-.18}, //-.06 .15
+		//							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
+		//						},
+		//					}
+		//				}
+		//			});
+		//			attached.push(wings);
+		//		}
+		//	}
 		// });
 
 
@@ -806,23 +790,23 @@ export default class trigger {
 		// If the user has a tracker, delete it.
 		//================================
 		// if (this.userTrackers.has(user.id)) {
-		// 	const trackers = this.userTrackers.get(user.id);
-		// 	trackers.foreTrack.detach();
-		// 	trackers.foreTrack.destroy();
+		//	const trackers = this.userTrackers.get(user.id);
+		//	trackers.foreTrack.detach();
+		//	trackers.foreTrack.destroy();
 		//
-		// 	trackers.neckTrack.detach();
-		// 	trackers.neckTrack.destroy();
+		//	trackers.neckTrack.detach();
+		//	trackers.neckTrack.destroy();
 		//
-		// 	trackers.spinemidTrack.detach();
-		// 	trackers.spinemidTrack.destroy();
-		// 	// trackers.rightHandTrack.detach();
-		// 	// trackers.rightHandTrack.destroy();
-		// 	// trackers.fractalTrans.detach();
-		// 	// trackers.fractalTrans.destroy();
-		// 	// this.resetVenusVidSphere(String(user.id));
+		//	trackers.spinemidTrack.detach();
+		//	trackers.spinemidTrack.destroy();
+		//	// trackers.rightHandTrack.detach();
+		//	// trackers.rightHandTrack.destroy();
+		//	// trackers.fractalTrans.detach();
+		//	// trackers.fractalTrans.destroy();
+		//	// this.resetVenusVidSphere(String(user.id));
 		//
-		// 	// Remove the entry from the map.
-		// 	this.userTrackers.delete(user.id);
+		//	// Remove the entry from the map.
+		//	this.userTrackers.delete(user.id);
 		// }
 
 		if (this.attachments.has(user.id)) {
@@ -844,4 +828,142 @@ export default class trigger {
 		}
 	}
 
+  private loadSampleJSON () {
+    return {
+      "Triggers": {
+        "Trigger1": {
+          "displayName": "Trigger 1",
+          "triggerType": "Box",
+          "isVisibile":true,
+          "triggerTransform": {
+            "dimensions": {
+              "x": 1.0,
+              "y": 1.5,
+              "z": 0.4
+            },
+            "scale": {
+              "x": 1.005,
+              "y": 1.005,
+              "z": 1.005
+            },
+            "position": {
+              "x": 10,
+              "y": 1,
+              "z": 5
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "triggeredOnEnter": {
+            "killResources": [""],
+            "spawnResources": [""]
+          },
+          "triggeredOnExit": {
+            "killResources": ["Venus-Wings"],
+            "spawnResources": [""]
+          }
+        }
+      },
+      "Artifacts": {
+        "Venus-Wings": {
+          "resourceId": "artifact:1862115330621440028",
+          "displayName": "Venus-Wings",
+          "attachPoint": "",
+          "grabbable": true,
+          "scale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "position": {
+            "x": 0,
+            "y": 0.1,
+            "z": -0.18
+          },
+          "rotation": {
+            "x": -5,
+            "y": 0,
+            "z": 0
+          },
+          "menuScale": {
+            "x": 0.75,
+            "y": 0.75,
+            "z": 0.75
+          },
+          "menuPosition": {
+            "x": 4,
+            "y": 1.5,
+            "z": 0
+          },
+          "menuRotation": {
+            "x": 0,
+            "y": 180,
+            "z": 0
+          }
+        },
+        "Madhat-Deep-Purple": {
+          "resourceId": "artifact:1880110261923217604",
+          "attachPoint": "head",
+          "displayName": "Madhat-Deep-Purple",
+          "grabbable": "true",
+          "scale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "position": {
+            "x": 1,
+            "y": 2,
+            "z": -1
+          },
+          "rotation": {
+            "x": 180,
+            "y": 0,
+            "z": 180
+          },
+          "menuScale": {
+            "x": 0.03,
+            "y": 0.03,
+            "z": 0.03
+          },
+          "menuPosition": {
+            "x": 3,
+            "y": 1.65,
+            "z": 0
+          },
+          "menuRotation": {
+            "x": 0,
+            "y": 180,
+            "z": 0
+          }
+        }
+      },
+      "SpawnAtStartup":["Madhat-Deep-Purple"],
+      "MenuSetup":{
+        "displayName": "Clear",
+        "resourceId": "artifact:1947124567050814312",
+        "options": {
+          "previewMargin": 1.5
+        },
+        "menuScale": {
+          "x": 0.3,
+          "y": 0.3,
+          "z": 0.3
+        },
+        "menuPosition": {
+          "x": 0,
+          "y": 1.65,
+          "z": 0
+        },
+        "menuRotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    }
+  }
 }

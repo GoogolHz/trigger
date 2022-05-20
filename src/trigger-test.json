@@ -27,14 +27,14 @@
         }
       },
       "triggeredOnEnter": {
-        "killResources": [],
-        "spawnResources": [],
+        "killResources": [""],
+        "spawnResources": [""]
       },
       "triggeredOnExit": {
-        "killResources": ['Venus-Wings'],
-        "spawnResources": [],
-      },
-    },
+        "killResources": ["Venus-Wings"],
+        "spawnResources": [""]
+      }
+    }
   },
   "Artifacts": {
     "Venus-Wings": {
@@ -77,7 +77,7 @@
       "resourceId": "artifact:1880110261923217604",
       "attachPoint": "head",
       "displayName": "Madhat-Deep-Purple",
-      "grabbable": "true",
+      "grabbable": true,
       "scale": {
         "x": 1,
         "y": 1,
