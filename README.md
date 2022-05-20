@@ -1,4 +1,6 @@
-Creates trigger instances of content pack items
+This MRE is <a href="https://www.openode.io/">Cloud hosted on opeNode.io</a>
+
+This OpenSource MRE takes a content pack .json file that defines trigger zones, artifacts & their transforms to spawn, and will eventual include a clickable menu for spawning artifacts. Artifacts can be wearable, grabbable, and rigid bodies. See Github repo for .json formatting details.
 
 ## Setup
 
