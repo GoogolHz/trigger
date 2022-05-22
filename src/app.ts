@@ -10,7 +10,10 @@
 
 import * as MRE from '@microsoft/mixed-reality-extension-sdk';
 import fetch from 'node-fetch';
-
+// mod.cjs
+// const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+// const fetchPromise = import('node-fetch').then(mod => mod.default);
+// const fetch = (...args) => fetchPromise.then(fetch => fetch(...args));
 // import delay from './utils/delay';
 
 /*
@@ -183,19 +186,19 @@ type primitiveShapes = {
 // // eslint-disable-next-line @typescript-eslint/no-var-requires
 // const TriggerDatabase: TriggerDatabase = require('../public/hats.json');
 
-
-//======================================
+//
+// ======================================
 // Convert a rotation from Unity-style Euler angles to a Quaternion.
 // If null or undefined passed in, use a 0 rotation.
-//======================================
-// function Unity2QuaternionRotation(euler: MRE.Vector3Like):
-//   MRE.Quaternion {
-//   return euler ? MRE.Quaternion.FromEulerAngles(
-//     euler.x * MRE.DegreesToRadians,
-//     euler.y * MRE.DegreesToRadians,
-//     euler.z * MRE.DegreesToRadians
-//   ) : new MRE.Quaternion();
-// }
+// ======================================
+function Unity2QuaternionRotation(euler: MRE.Vector3Like):
+  MRE.Quaternion {
+  return euler ? MRE.Quaternion.FromEulerAngles(
+    euler.x * MRE.DegreesToRadians,
+    euler.y * MRE.DegreesToRadians,
+    euler.z * MRE.DegreesToRadians
+  ) : new MRE.Quaternion();
+}
 
 /*
  * sleep() function
@@ -267,14 +270,6 @@ export default class trigger {
 	private TriggerConfig: Promise<void> = null;
 
   private primitiveShapes: primitiveShapes;
-
-  // private primitiveShapes = {
-  //   'Box': MRE.PrimitiveShape.Box,
-  //   'Capsule': MRE.PrimitiveShape.Capsule,
-  //   'Cylinder': MRE.PrimitiveShape.Cylinder,
-  //   'Plane': MRE.PrimitiveShape.Plane,
-  //   'Sphere': MRE.PrimitiveShape.Sphere
-  // };
 
 	public PI = Math.PI;
 	public TAU = Math.PI * 2;
@@ -394,7 +389,6 @@ export default class trigger {
 		const argv = process.execArgv.join();
 		const isDebug = argv.includes('inspect') || argv.includes('debug');
 
-
 		// set up somewhere to store loaded assets (meshes, textures,
 		// animations, gltfs, etc.)
 		this.assets = new MRE.AssetContainer(this.context);
@@ -415,7 +409,7 @@ export default class trigger {
 		//==========================
 		// Set up the synchronization function
 		//==========================
-		// this.syncfix.addSyncFunc(() => this.synchronizeAttachments());
+		this.syncfix.addSyncFunc(() => this.synchronizeAttachments());
 
 		// this.roles = this.params.roles as
 		// this.rolesString = this.params.roles as string;
@@ -607,12 +601,133 @@ export default class trigger {
 	}
 
   /**
- 	 * Instantiate a hat and attach it to the avatar's head.
+ 	 * Instantiate a artifact and attach it to the avatar's head.
  	 * @param hatId The id of the hat in the hat database.
  	 * @param userId The id of the user we will attach the hat to.
  	 */
   private triggeredActions(tracker: MRE.Actor, triggered: triggeredOnEvent) {
 
+    // console.log("triggered?", triggered)
+    console.log(`---triggered? ${JSON.stringify(triggered,null,3)} `);
+    // const hatRecord = this.artifactDB[hatId];
+    //
+    // console.log(` >> hatId: ${hatId}, userId: ${userId}`);
+    // let userattachments: MRE.Actor[] = [];
+    // if (this.attachments.has(userId)) {
+    //   console.log(`this.attachments.has(${userId})`);
+    //   userattachments = this.attachments.get(userId);
+    //
+    //   //added this looping through attachment array
+    //   for (const attacheditem of userattachments) {
+    //     console.log(`---attacheditem ${JSON.stringify(attacheditem,null,3)} ===hatId ${hatId}`);
+    //
+    //
+    //   }
+    //
+    // }
+    //
+    // // this.text.text = hatId;
+    // // If the user selected 'clear', then early out.
+    //
+    // if (hatId === "clear!") {
+    //   // console.log("clearing");
+    //     // If the user is wearing a hat, destroy it.
+    //     // if (this.attachments.has(userId)) this.attachments.get(userId).destroy();
+    //     // this.attachments.delete(userId);
+    //     this.removeUserAttachments(userId);
+    //     return;
+    // } else if (userattachments.length >=2 ){
+    //   return;
+    // }
+    // // else if (hatId == "moveup!") {
+    // // 		if (this.attachments.has(userId))
+    // // 				this.attachments.get(userId).transform.local.position.y += 0.01;
+    // // 		return;
+    // // }
+    // // else if (hatId == "movedown!") {
+    // // 		if (this.attachments.has(userId))
+    // // 				this.attachments.get(userId).transform.local.position.y -= 0.01;
+    // // 		return;
+    // // }
+    // // else if (hatId == "moveforward!") {
+    // // 		if (this.attachments.has(userId))
+    // // 				this.attachments.get(userId).transform.local.position.z += 0.01;
+    // // 		return;
+    // // }
+    // // else if (hatId == "moveback!") {
+    // // 		if (this.attachments.has(userId))
+    // // 				this.attachments.get(userId).transform.local.position.z -= 0.01;
+    // // 		return;
+    // // }
+    // // else if (hatId == "sizeup!") {
+    // // 		if (this.attachments.has(userId)){
+    // // 				this.attachments.get(userId).transform.local.scale.x += 0.02;
+    // // 				this.attachments.get(userId).transform.local.scale.y += 0.02;
+    // // 				this.attachments.get(userId).transform.local.scale.z += 0.02;
+    // // 		}
+    // // 		return;
+    // // }
+    // // else if (hatId == "sizedown!") {
+    // // 		if (this.attachments.has(userId)){
+    // // 				this.attachments.get(userId).transform.local.scale.x -= 0.02;
+    // // 				this.attachments.get(userId).transform.local.scale.y -= 0.02;
+    // // 				this.attachments.get(userId).transform.local.scale.z -= 0.02;
+    // // 		}
+    // // 		return;
+    // // }
+    //
+    // // If the user is wearing a hat, destroy it.
+    // // this.removeUserAttachments(userId);
+    // // if (this.attachedHats.has(userId)) this.attachedHats.get(userId).destroy();
+    // // this.attachedHats.delete(userId);
+    // // this.removeUserAttachments(userId);
+    //
+    // // let attached: MRE.Actor[] = [];
+    //
+    // // const hatRecord = this.artifactDB[hatId];
+    //
+    // // Create the hat model and attach it to the avatar's head.
+    // // Jimmy
+    //
+    // const position = hatRecord.position ? hatRecord.position : { x: 0, y: 0, z: 0 }
+    // const scale = hatRecord.scale ? hatRecord.scale : { x: 1.5, y: 1.5, z: 1.5 }
+    // const rotation = hatRecord.rotation ? hatRecord.rotation : { x: 0, y: 180, z: 0 }
+    // // const attachPoint = <MRE.AttachPoint> (hatRecord.attachPoint ? hatRecord.attachPoint : 'head')
+    // const attachPoint = (hatRecord.attachPoint ? hatRecord.attachPoint : 'head') as MRE.AttachPoint;
+    //
+    // const actor = MRE.Actor.CreateFromLibrary(this.context, {
+    //   resourceId: hatRecord.resourceId,
+    //   actor: {
+    //     transform: {
+    //       local: {
+    //         position: position,
+    //         rotation: MRE.Quaternion.FromEulerAngles(
+    //           rotation.x * MRE.DegreesToRadians,
+    //           rotation.y * MRE.DegreesToRadians,
+    //           rotation.z * MRE.DegreesToRadians),
+    //         scale: scale
+    //       }
+    //     },
+    //     attachment: {
+    //       attachPoint: attachPoint,
+    //       userId: userId
+    //     }
+    //   }
+    // });
+    //
+    //
+    // // let attach:AttachedActor = new AttachedActor;
+    // // attach.resourceId = hatRecord.resourceId;
+    // // attach.actor = actor;
+    //
+    // // console.log(" - - - - ", JSON.stringify(attach,null, 3));
+    // // AttachedActor {
+    // // 	resourceId: String;
+    // // 	actor:  MRE.Actor;
+    // // }
+    // userattachments.push(actor);
+    // this.attachments.set(userId, userattachments);
+    //
 
   }
 
