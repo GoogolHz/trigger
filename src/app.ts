@@ -520,26 +520,43 @@ export default class trigger {
 		// before continuing.
 		// ${this.baseUrl}/${hatRecord.resourceName}`)
 		// console.log(`baseURL: ${this.baseUrl}`);
+
+
     this.artifactDB = this.triggerMREDB["Artifacts"];
-    console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
-		return Promise.all(
-			Object.keys(this.artifactDB).map(artifactId => {
-        const artRecord = this.artifactDB[artifactId];
-        if (artRecord.resourceId) {
-          return this.assets.loadGltf(
-            `${artRecord.resourceId}`)
-            .then(assets => {
-              this.prefabs[artifactId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
-            })
-            .catch(e => MRE.log.error("app", e));
-        } else {
-          return Promise.resolve();
-        }
-			})
-    );
+    // console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
+		// return Promise.all(
+		// 	Object.keys(this.artifactDB).map(artifactId => {
+    //     const artRecord = this.artifactDB[artifactId];
+    //     if (artRecord.resourceId) {
+    //       return this.assets.loadGltf(
+    //         `${artRecord.resourceId}`)
+    //         .then(assets => {
+    //           this.prefabs[artifactId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
+    //         })
+    //         .catch(e => MRE.log.error("app", e));
+    //     } else {
+    //       return Promise.resolve();
+    //     }
+		// 	})
+    // );
 	}
+  private getPrimitiveShape(prime: string) {
+    switch (prime) {
+      case 'Box':
+        return MRE.PrimitiveShape.Box;
+      case 'Capsule':
+        return MRE.PrimitiveShape.Capsule;
+      case 'Cylinder':
+        return MRE.PrimitiveShape.Cylinder;
+      case 'Plane':
+        return MRE.PrimitiveShape.Plane;
+      case 'Sphere':
+        return MRE.PrimitiveShape.Sphere
+    }
+  }
 
   private triggerFactory() {
+    console.log("  >>>>triigered");
     this.triggerDB = this.triggerMREDB["Triggers"];
 		const triggers = Object.entries(this.triggerDB);
 
@@ -558,9 +575,17 @@ export default class trigger {
       if (triggerShapeType === "Menu") {
         makeMenu = true;
       } else {
+        // console.log(`trigger shape: ${triggerShapeType}`);
+        // console.log('typeof MRE.PrimitiveShape:',typeof(MRE.PrimitiveShape));
+        // console.log('typeof MRE.PrimitiveShape.Box:',typeof(MRE.PrimitiveShape.Box));
+        // console.log('      MRE.PrimitiveShape.Box:', MRE.PrimitiveShape.Box);
+        // console.log(`trigger: ${JSON.stringify(MRE.PrimitiveShape.Box,null,3)} `);
+//             shape: this.primitiveShapes[triggerShapeType as keyof primitiveShapes],
+//            shape: <keyof typeof MRE.PrimitiveShape> triggerShapeType,
+
         trigger = MRE.Actor.CreatePrimitive(this.assets, {
           definition: {
-            shape: this.primitiveShapes[triggerShapeType as keyof primitiveShapes],
+            shape: this.getPrimitiveShape(triggerShapeType),
             dimensions: trigTransform.dimensions // make sure there's a gap
           },
           addCollider: true,
