@@ -28,7 +28,7 @@
       },
       "triggeredOnEnter": {
         "killResources": [""],
-        "spawnResources": [""]
+        "spawnResources": ["Venus-Wings"]
       },
       "triggeredOnExit": {
         "killResources": ["Venus-Wings"],
@@ -39,6 +39,7 @@
   "Artifacts": {
     "Venus-Wings": {
       "resourceId": "artifact:1862115330621440028",
+      "resourceURL": "",
       "displayName": "Venus-Wings",
       "attachPoint": "",
       "grabbable": true,

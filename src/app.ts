@@ -335,8 +335,13 @@ export default class trigger {
 					if(DEBUG){ console.log(json); }
 					// this.artifactDB = Object.assign({}, json);
           this.triggerMREDB = Object.assign({}, json);
+
+          this.triggerDB = this.triggerMREDB["Triggers"];
+          this.artifactDB = this.triggerMREDB["Artifacts"];
+
           // this.triggerMREDB = JSON.parse(JSON.stringify(json));
-					console.log('cpack: ', JSON.stringify(this.triggerMREDB, null, '\t'));
+					// console.log('cpack: ', JSON.stringify(this.triggerMREDB, null, '\t'));
+          console.log('cpack artifacts: ', JSON.stringify(this.artifactDB, null, '\t'));
 					// this.context.onStarted(() => this.started());
 					this.started();
 				});
@@ -379,6 +384,7 @@ export default class trigger {
 	 * Once the context is "started", initialize the app.
 	 */
 	private async started() {
+    console.log("started");
 		// Check whether code is running in a debuggable watched filesystem
 		// environment and if so delay starting the app by 1 second to give
 		// the debugger time to detect that the server has restarted and reconnect.
@@ -482,7 +488,7 @@ export default class trigger {
 		// this.fractalize();
 
 		// return true;
-		console.log("pepepe  frankenstein");
+		// console.log("pepepe  frankenstein");
 
 		// version to use with async code
 		if (isDebug) {
@@ -522,23 +528,26 @@ export default class trigger {
 		// console.log(`baseURL: ${this.baseUrl}`);
 
 
-    this.artifactDB = this.triggerMREDB["Artifacts"];
-    // console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
-		// return Promise.all(
-		// 	Object.keys(this.artifactDB).map(artifactId => {
-    //     const artRecord = this.artifactDB[artifactId];
-    //     if (artRecord.resourceId) {
-    //       return this.assets.loadGltf(
-    //         `${artRecord.resourceId}`)
-    //         .then(assets => {
-    //           this.prefabs[artifactId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
-    //         })
-    //         .catch(e => MRE.log.error("app", e));
-    //     } else {
-    //       return Promise.resolve();
-    //     }
-		// 	})
-    // );
+    // this.artifactDB = this.triggerMREDB["Artifacts"];
+    console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
+		return Promise.all(
+			Object.keys(this.artifactDB).map(artifactId => {
+        const artRecord = this.artifactDB[artifactId];
+
+        if (artRecord.resourceURL && artRecord.resourceURL != "") {
+          console.log("preloadGLTF");
+          return this.assets.loadGltf(
+            `${artRecord.resourceURL}`)
+            .then(assets => {
+              this.prefabs[artifactId] = assets.find(a => a.prefab !== null) as MRE.Prefab;
+            })
+            .catch(e => MRE.log.error("app", e));
+        } else {
+          console.log("promise resolved");
+          return Promise.resolve();
+        }
+			})
+    );
 	}
   private getPrimitiveShape(prime: string) {
     switch (prime) {
@@ -556,8 +565,8 @@ export default class trigger {
   }
 
   private triggerFactory() {
-    console.log("  >>>>triigered");
-    this.triggerDB = this.triggerMREDB["Triggers"];
+    console.log("  >>>>triggered");
+    // this.triggerDB = this.triggerMREDB["Triggers"];
 		const triggers = Object.entries(this.triggerDB);
 
     let makeMenu = false;
@@ -575,14 +584,6 @@ export default class trigger {
       if (triggerShapeType === "Menu") {
         makeMenu = true;
       } else {
-        // console.log(`trigger shape: ${triggerShapeType}`);
-        // console.log('typeof MRE.PrimitiveShape:',typeof(MRE.PrimitiveShape));
-        // console.log('typeof MRE.PrimitiveShape.Box:',typeof(MRE.PrimitiveShape.Box));
-        // console.log('      MRE.PrimitiveShape.Box:', MRE.PrimitiveShape.Box);
-        // console.log(`trigger: ${JSON.stringify(MRE.PrimitiveShape.Box,null,3)} `);
-//             shape: this.primitiveShapes[triggerShapeType as keyof primitiveShapes],
-//            shape: <keyof typeof MRE.PrimitiveShape> triggerShapeType,
-
         trigger = MRE.Actor.CreatePrimitive(this.assets, {
           definition: {
             shape: this.getPrimitiveShape(triggerShapeType),
@@ -604,6 +605,7 @@ export default class trigger {
         });
         // trigger.setBehavior(MRE.ButtonBehavior).onClick(user => this.wearAccessory(key, user.id));
         trigger.created().then(() => {
+          console.log("set up trigger events");
           trigger.collider.isTrigger = true;
           trigger.collider.onTrigger('trigger-enter', (actor) => this.triggeredActions(actor, triggeredOnEnter));
           trigger.collider.onTrigger('trigger-exit',  (actor) => this.triggeredActions(actor, triggeredOnExit));
@@ -625,6 +627,53 @@ export default class trigger {
 
 	}
 
+
+	//====================================
+	// killArtifacts() -- remove Artifacts
+	//====================================
+	private killArtifacts(artifactName: string) {
+    console.log(`---kill artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
+
+    if (artifactName.length) {
+      Object.keys(this.artifactDB).map(artifactId => {
+        const artRecord = this.artifactDB[artifactId];
+        console.log(`---kill artifact data ${JSON.stringify(artRecord,null,3)} `);
+      });
+      // console.log("kill artifactName:", artifactName);
+      // if (this.artifactDB[artifactName]) {
+      //   const artifact = this.artifactDB[artifactName];
+      //   // this.artifactDB = this.triggerMREDB["Artifacts"]
+      //   console.log(`---artifact data ${JSON.stringify(artifact,null,3)} `);
+      // }
+    }
+  }
+
+
+  //====================================
+  // spawnArtifacts() -- insantiate Artifacts
+  //====================================
+  private spawnArtifacts(artifactName: string) {
+    console.log(`---spawn artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
+
+    if (artifactName.length) {
+      Object.keys(this.artifactDB).map(artifactId => {
+        const artRecord = this.artifactDB[artifactId];
+        console.log(`---spawn artifact data ${JSON.stringify(artRecord,null,3)} `);
+
+      });
+      // console.log("spawn artifactName:", artifactName);
+      // if (this.artifactDB[artifactName]) {
+      //   const artifact = this.artifactDB[artifactName];
+      //   console.log(`---artifact data ${JSON.stringify(artifact,null,3)} `);
+      // }
+    }
+    // else {
+    //   console.log(`---artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
+    // }
+  }
+
+
+
   /**
  	 * Instantiate a artifact and attach it to the avatar's head.
  	 * @param hatId The id of the hat in the hat database.
@@ -632,8 +681,27 @@ export default class trigger {
  	 */
   private triggeredActions(tracker: MRE.Actor, triggered: triggeredOnEvent) {
 
-    // console.log("triggered?", triggered)
+    // const artifacts = Object.entries(this.artifactDB);
+
     console.log(`---triggered? ${JSON.stringify(triggered,null,3)} `);
+
+    const toKill:string[] = triggered["killResources"];
+    const toSpawn:string[] = triggered["spawnResources"];
+
+    // console.log("toKill", toKill);
+    // console.log("toSpawn", toSpawn);
+
+
+    // triggered.forEach(([key, value]) => {
+    if (toKill.length ) {
+      toKill.forEach(this.killArtifacts);
+    }
+    if (toSpawn.length ) {
+      toSpawn.forEach(this.spawnArtifacts);
+    }
+    // });
+
+
     // const hatRecord = this.artifactDB[hatId];
     //
     // console.log(` >> hatId: ${hatId}, userId: ${userId}`);
@@ -761,6 +829,7 @@ export default class trigger {
 	// userJoined() -- attach a tracker to each user
 	//====================================
 	private userJoined(user: MRE.User) {
+    console.log("userJoined");
 		//================================
 		// Create a new tracker and attach it to the user
 		//================================
@@ -791,7 +860,7 @@ export default class trigger {
 						attachPoint: 'center-eye',
 						userId: user.id
 					},
-					appearance: { enabled: false },
+					appearance: { enabled: true },
 
 					//========================
 					// Need to subscribe to 'transform' so trigger will work for everyone.
