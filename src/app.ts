@@ -193,14 +193,14 @@ type primitiveShapes = {
 // Convert a rotation from Unity-style Euler angles to a Quaternion.
 // If null or undefined passed in, use a 0 rotation.
 // ======================================
-function Unity2QuaternionRotation(euler: MRE.Vector3Like):
-  MRE.Quaternion {
-  return euler ? MRE.Quaternion.FromEulerAngles(
-    euler.x * MRE.DegreesToRadians,
-    euler.y * MRE.DegreesToRadians,
-    euler.z * MRE.DegreesToRadians
-  ) : new MRE.Quaternion();
-}
+// function Unity2QuaternionRotation(euler: MRE.Vector3Like):
+//   MRE.Quaternion {
+//   return euler ? MRE.Quaternion.FromEulerAngles(
+//     euler.x * MRE.DegreesToRadians,
+//     euler.y * MRE.DegreesToRadians,
+//     euler.z * MRE.DegreesToRadians
+//   ) : new MRE.Quaternion();
+// }
 
 /*
  * sleep() function
@@ -222,10 +222,10 @@ interface BodyTracker {
 	spinemidTrack: MRE.Actor;
 }
 
-type AttachedActor = {
-	resourceId: String;
-	actor:  MRE.Actor;
-}
+// type AttachedActor = {
+// 	resourceId: String;
+// 	actor:  MRE.Actor;
+// }
 
 
 
@@ -607,7 +607,7 @@ export default class trigger {
 		const triggers = Object.entries(this.triggerDB);
 
     let makeMenu = false;
-    let menu: MRE.Actor = null;
+    // let menu: MRE.Actor = null;
 
 
     triggers.forEach(([key, value]) => {
@@ -656,11 +656,11 @@ export default class trigger {
     if (makeMenu) {
 			console.log("makeMenu");
 			// Create a parent object for all the menu items.
-      this.menuSetup = this.triggerMREDB["MenuSetup"];
-			menu = MRE.Actor.Create(this.context);
-			if (this.menuSetup.options.previewMargin){
-				this.previewMargin = this.menuSetup.options.previewMargin;
-			}
+      // this.menuSetup = this.triggerMREDB["MenuSetup"];
+			// menu = MRE.Actor.Create(this.context);
+			// if (this.menuSetup.options.previewMargin){
+			// 	this.previewMargin = this.menuSetup.options.previewMargin;
+			// }
 		}
 
 	}
