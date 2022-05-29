@@ -35,6 +35,8 @@ type artifactDescriptor = {
 	grabbable: boolean;
 	rigidBody: boolean;
 	exclusive: boolean;
+  resetInterval: number;
+  resetToArtifact: string;
 	scale: {
 		x: number;
 		y: number;
@@ -245,7 +247,10 @@ export default class trigger {
 	 */
 
 	// private attachments = new Map<MRE.Guid, MRE.Actor>();
-	private attachments = new Map<MRE.Guid, MRE.Actor[]>();
+  private attachments = new Map<MRE.Guid, MRE.Actor[]>();
+  private exlusives = new Map<MRE.Guid, MRE.Actor[]>();
+
+  private artifice = new Map<string, MRE.Actor>();
 
 	private prefabs: { [key: string]: MRE.Prefab } = {};
 
@@ -254,6 +259,7 @@ export default class trigger {
 
 	// for triggers
 	private userTrackers = new Map<MRE.Guid, BodyTracker>();
+  private nowPlaying: string[] = [];
 
 	private assets: MRE.AssetContainer;
 
@@ -340,7 +346,7 @@ export default class trigger {
           this.artifactDB = this.triggerMREDB["Artifacts"];
 
           // this.triggerMREDB = JSON.parse(JSON.stringify(json));
-					// console.log('cpack: ', JSON.stringify(this.triggerMREDB, null, '\t'));
+					console.log('cpack MREDB: ', JSON.stringify(this.triggerMREDB, null, '\t'));
           console.log('cpack artifacts: ', JSON.stringify(this.artifactDB, null, '\t'));
 					// this.context.onStarted(() => this.started());
 					this.started();
@@ -490,6 +496,8 @@ export default class trigger {
 		// return true;
 		// console.log("pepepe  frankenstein");
 
+    console.log("started() Artifacts: ", this.artifactDB);
+
 		// version to use with async code
 		if (isDebug) {
 			await new Promise(resolve => setTimeout(resolve, delay));
@@ -530,7 +538,8 @@ export default class trigger {
 
     // this.artifactDB = this.triggerMREDB["Artifacts"];
     console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
-		return Promise.all(
+    console.log("preloadGLTFs() Artifacts: ", this.artifactDB);
+    return Promise.all(
 			Object.keys(this.artifactDB).map(artifactId => {
         const artRecord = this.artifactDB[artifactId];
 
@@ -549,6 +558,10 @@ export default class trigger {
 			})
     );
 	}
+
+  //====================================
+  // getPrimitiveShape() -- returns MRE.Primitive shapes depending on string
+  //====================================
   private getPrimitiveShape(prime: string) {
     switch (prime) {
       case 'Box':
@@ -564,8 +577,32 @@ export default class trigger {
     }
   }
 
+  //====================================
+  // getPrimitiveShape() -- returns MRE.Primitive shapes depending on string
+  //====================================
+  // private getPrimitiveShape(prime: string) {
+  //   switch (prime) {
+  //     case 'Box':
+  //       return MRE.PrimitiveShape.Box;
+  //     case 'Capsule':
+  //       return MRE.PrimitiveShape.Capsule;
+  //     case 'Cylinder':
+  //       return MRE.PrimitiveShape.Cylinder;
+  //     case 'Plane':
+  //       return MRE.PrimitiveShape.Plane;
+  //     case 'Sphere':
+  //       return MRE.PrimitiveShape.Sphere
+  //   }
+  // }
+
+  //====================================
+	// triggerFactory() -- setup trigger zones
+	//====================================
   private triggerFactory() {
     console.log("  >>>>triggered");
+
+    console.log("triggerFactory() Artifacts: ", this.artifactDB);
+
     // this.triggerDB = this.triggerMREDB["Triggers"];
 		const triggers = Object.entries(this.triggerDB);
 
@@ -574,6 +611,7 @@ export default class trigger {
 
 
     triggers.forEach(([key, value]) => {
+      console.log( 'triggers key: ', key);
       // let button;
       let trigger: MRE.Actor = null;
       const triggerShapeType: string = value.triggerType;
@@ -606,13 +644,13 @@ export default class trigger {
         // trigger.setBehavior(MRE.ButtonBehavior).onClick(user => this.wearAccessory(key, user.id));
         trigger.created().then(() => {
           console.log("set up trigger events");
+          console.log("triggerFactory() trigger.created Artifacts: ", this.artifactDB);
+
           trigger.collider.isTrigger = true;
           trigger.collider.onTrigger('trigger-enter', (actor) => this.triggeredActions(actor, triggeredOnEnter));
           trigger.collider.onTrigger('trigger-exit',  (actor) => this.triggeredActions(actor, triggeredOnExit));
         });
-
       }
-
     });
 
     if (makeMenu) {
@@ -631,45 +669,134 @@ export default class trigger {
 	//====================================
 	// killArtifacts() -- remove Artifacts
 	//====================================
-	private killArtifacts(artifactName: string) {
-    console.log(`---kill artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
+	private killArtifacts(tracker: MRE.Actor, artifactName: string, _this: this) {
+    console.log("--> killArtifacts:", artifactName);
+    console.log("killArtifacts() Artifacts: ", _this.artifactDB);
 
-    if (artifactName.length) {
-      Object.keys(this.artifactDB).map(artifactId => {
-        const artRecord = this.artifactDB[artifactId];
-        console.log(`---kill artifact data ${JSON.stringify(artRecord,null,3)} `);
-      });
-      // console.log("kill artifactName:", artifactName);
-      // if (this.artifactDB[artifactName]) {
-      //   const artifact = this.artifactDB[artifactName];
-      //   // this.artifactDB = this.triggerMREDB["Artifacts"]
-      //   console.log(`---artifact data ${JSON.stringify(artifact,null,3)} `);
-      // }
+    for (const [key, value] of Object.entries(_this.artifactDB)) {
+      // console.log(`${key}: ${value}`);
+      if (key == artifactName) {
+        console.log("Matched!", JSON.stringify(value, null, '\t'));
+
+
+
+      }
     }
+
+
   }
 
 
   //====================================
   // spawnArtifacts() -- insantiate Artifacts
   //====================================
-  private spawnArtifacts(artifactName: string) {
-    console.log(`---spawn artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
+  private spawnArtifacts(tracker: MRE.Actor, artifactName: string, _this: this) {
+    // console.log(`---spawn artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
+    console.log("spawnArtifacts() Artifacts: ", _this.artifactDB);
 
-    if (artifactName.length) {
-      Object.keys(this.artifactDB).map(artifactId => {
-        const artRecord = this.artifactDB[artifactId];
-        console.log(`---spawn artifact data ${JSON.stringify(artRecord,null,3)} `);
+    for (const [key, value] of Object.entries(_this.artifactDB)) {
+      // console.log(`${key}: ${value}`);
+      if (key == artifactName) {
 
-      });
-      // console.log("spawn artifactName:", artifactName);
-      // if (this.artifactDB[artifactName]) {
-      //   const artifact = this.artifactDB[artifactName];
-      //   console.log(`---artifact data ${JSON.stringify(artifact,null,3)} `);
-      // }
+        const artifact:artifactDescriptor = value;
+        const userId = tracker.attachment.userId;
+        console.log(`---spawn artifact data ${JSON.stringify(artifact,null,3)} `);
+
+        const position = artifact.position ? artifact.position : { x: 0, y: 0, z: 0 }
+        const scale = artifact.scale ? artifact.scale : { x: 1.5, y: 1.5, z: 1.5 }
+        const rotation = artifact.rotation ? artifact.rotation : { x: 0, y: 180, z: 0 }
+        // const attachPoint = <MRE.AttachPoint> (artifact.attachPoint ? artifact.attachPoint : 'head')
+        const attachPoint = (artifact.attachPoint ? artifact.attachPoint : 'head') as MRE.AttachPoint;
+        let actorRef: MRE.Actor;
+        // const resetInterval: number = artifact.resetInterval;
+
+        if (artifact.grabbable){
+            actorRef = MRE.Actor.CreateFromLibrary(this.context, {
+                resourceId: artifact.resourceId,
+                actor: {
+                  collider: { geometry: { shape: MRE.ColliderType.Auto } },
+                  transform: {
+                    local: {
+                      position: position,
+                      rotation: MRE.Quaternion.FromEulerAngles(
+                        rotation.x * MRE.DegreesToRadians,
+                        rotation.y * MRE.DegreesToRadians,
+                        rotation.z * MRE.DegreesToRadians),
+                      scale: scale
+                    }
+                  },
+                  attachment: {
+                    attachPoint: attachPoint,
+                    userId: userId
+                  }
+                }
+            });
+        } else if (artifact.attachPoint) {
+            actorRef = MRE.Actor.CreateFromLibrary(this.context, {
+                resourceId: artifact.resourceId,
+                actor: {
+                    transform: {
+                        local: {
+                            position: position,
+                            rotation: MRE.Quaternion.FromEulerAngles(rotation.x * MRE.DegreesToRadians, rotation.y * MRE.DegreesToRadians, rotation.z * MRE.DegreesToRadians),
+                            scale: scale
+                        }
+                    },
+                    attachment: {
+                        attachPoint: attachPoint,
+                        userId: userId
+                    }
+                }
+            });
+        } else if (artifact.exclusive) {
+            actorRef = MRE.Actor.CreateFromLibrary(this.context, {
+                resourceId: artifact.resourceId,
+                actor: {
+                    name: key,
+                    exclusiveToUser: userId,
+                    transform: {
+                        local: {
+                            position: position,
+                            rotation: MRE.Quaternion.FromEulerAngles(
+                              rotation.x * MRE.DegreesToRadians,
+                              rotation.y * MRE.DegreesToRadians,
+                              rotation.z * MRE.DegreesToRadians),
+                            scale: scale
+                        }
+                    },
+                    attachment: {
+                      attachPoint: attachPoint,
+                      userId: userId
+                    },
+                    appearance: { enabled: true }
+                }
+            });
+        }
+        console.log(`!--actorRef ${JSON.stringify(actorRef, null, 3)} `);
+        actorRef.created().then(() => {
+            if (artifact.attachPoint) {
+                console.log(`-+-actorRef ${JSON.stringify(artifact.attachPoint, null, 3)} `);
+            }
+            if (artifact.grabbable) {
+              console.log(`-+-actorRef ${JSON.stringify(actorRef,null,3)} `);
+              artifact.grabbable = true;
+              // artifact.onGrab('begin', () => { // on grab callback
+              //  });
+              // artifact.onGrab('end', () => { // let go callback
+              // });
+            }
+            if (artifact.resetInterval > 0) {
+                setTimeout(() => {
+                    // console.log("Delayed for 1 second.");
+                    // if (artifactName.length) _this.killArtifacts(tracker, artifactName, _this);
+                    actorRef.detach();
+                    actorRef.destroy();
+                }, artifact.resetInterval);
+            }
+        });
+
+      }
     }
-    // else {
-    //   console.log(`---artifact DB ${JSON.stringify(this.artifactDB,null,3)} `);
-    // }
   }
 
 
@@ -681,23 +808,22 @@ export default class trigger {
  	 */
   private triggeredActions(tracker: MRE.Actor, triggered: triggeredOnEvent) {
 
-    // const artifacts = Object.entries(this.artifactDB);
-
-    console.log(`---triggered? ${JSON.stringify(triggered,null,3)} `);
+    // console.log(`---triggered? ${JSON.stringify(triggered,null,3)} `);
+    // console.log("triggeredActions() Artifacts: ", this.artifactDB);
 
     const toKill:string[] = triggered["killResources"];
     const toSpawn:string[] = triggered["spawnResources"];
+    const _this = this;
 
-    // console.log("toKill", toKill);
-    // console.log("toSpawn", toSpawn);
-
-
-    // triggered.forEach(([key, value]) => {
     if (toKill.length ) {
-      toKill.forEach(this.killArtifacts);
+      toKill.forEach((element) => {
+        if (element.length) _this.killArtifacts(tracker, element, _this);
+      }, _this);
     }
     if (toSpawn.length ) {
-      toSpawn.forEach(this.spawnArtifacts);
+      toSpawn.forEach((element) => {
+        if (element.length) _this.spawnArtifacts(tracker, element, _this);
+      }, _this);
     }
     // });
 
@@ -829,7 +955,10 @@ export default class trigger {
 	// userJoined() -- attach a tracker to each user
 	//====================================
 	private userJoined(user: MRE.User) {
-    console.log("userJoined");
+    console.log(" - - - userJoined");
+
+    console.log("userJoined() Artifacts: ", this.artifactDB);
+
 		//================================
 		// Create a new tracker and attach it to the user
 		//================================
@@ -1019,7 +1148,6 @@ export default class trigger {
 		// }
 
 		if (this.attachments.has(user.id)) {
-
 
 			const userattachments: MRE.Actor[] = this.attachments.get(user.id);
 

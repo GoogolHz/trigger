@@ -43,6 +43,10 @@
       "displayName": "Venus-Wings",
       "attachPoint": "",
       "grabbable": true,
+      "rigidBody": false,
+      "exclusive": false,
+      "resetInterval": 5000,
+      "resetToArtifact": "",
       "scale": {
         "x": 1,
         "y": 1,
