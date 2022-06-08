@@ -177,6 +177,13 @@ type primitiveShapes = {
   'Sphere': MRE.PrimitiveShape.Sphere
 }
 
+interface BodyTracker {
+	foreTrack: MRE.Actor;
+	neckTrack: MRE.Actor;
+	spinemidTrack: MRE.Actor;
+}
+
+
 // type TriggerMREDatabase = {
 //   Triggers: triggerDescriptor;
 //   Artifacts: artifactDescriptor;
@@ -214,20 +221,10 @@ type primitiveShapes = {
 //   });
 // }
 
-
-
-interface BodyTracker {
-	foreTrack: MRE.Actor;
-	neckTrack: MRE.Actor;
-	spinemidTrack: MRE.Actor;
-}
-
 // type AttachedActor = {
 // 	resourceId: String;
 // 	actor:  MRE.Actor;
 // }
-
-
 
 /**
  * The main class of this app. All the logic goes here.
@@ -328,30 +325,51 @@ export default class trigger {
 		// constructor(private context: MRE.Context, protected baseUrl: string) {
 		// eslint-disable-next-line
 		console.log(">>>	constructor()");
+    //=============================
+		// Set up a userJoined() callback to attach userTrackers to the Users.
+		//=============================
+		this.context.onUserJoined((user) => this.userJoined(user));
 
-		this.contentPack = String(this.params.cpack || this.params.content_pack);
+		//=============================
+		// Set up a userLeft() callback to clean up userTrackers as Users leave.
+		//=============================
+		this.context.onUserLeft((user) => this.userLeft(user));
 
-		if (this.contentPack) {
-			// Specify a url to a JSON file
-			// https://account.altvr.com/content_packs/1187493048011980938
-			// e.g. ws://10.0.1.89:3901?content_pack=1187493048011980938
-			fetch(`https://account.altvr.com/api/content_packs/${this.contentPack}/raw.json`, { method: "Get" })
-				.then((response: any) => response.json())
-				.then((json: any) => {
-					if(DEBUG){ console.log(json); }
-					// this.artifactDB = Object.assign({}, json);
-          this.triggerMREDB = Object.assign({}, json);
 
-          this.triggerDB = this.triggerMREDB["Triggers"];
-          this.artifactDB = this.triggerMREDB["Artifacts"];
+    this.context.onStarted(() => {
+  		this.contentPack = String(this.params.cpack || this.params.content_pack);
+  		if (this.contentPack) {
+  			// Specify a url to a JSON file
+  			// https://account.altvr.com/content_packs/1187493048011980938
+  			// e.g. ws://10.0.1.89:3901?content_pack=1187493048011980938
+  			fetch(`https://account.altvr.com/api/content_packs/${this.contentPack}/raw.json`, { method: "Get" })
+  				.then((response: any) => response.json())
+  				.then((json: any) => {
+  					if(DEBUG){ console.log(json); }
+  					// this.artifactDB = Object.assign({}, json);
+            this.triggerMREDB = Object.assign({}, json);
 
-          // this.triggerMREDB = JSON.parse(JSON.stringify(json));
-					console.log('cpack MREDB: ', JSON.stringify(this.triggerMREDB, null, '\t'));
-          console.log('cpack artifacts: ', JSON.stringify(this.artifactDB, null, '\t'));
-					// this.context.onStarted(() => this.started());
-					this.started();
-				});
-		}
+            this.triggerDB = this.triggerMREDB["Triggers"];
+            this.artifactDB = this.triggerMREDB["Artifacts"];
+
+            // this.triggerMREDB = JSON.parse(JSON.stringify(json));
+  					console.log('cpack MREDB: ', JSON.stringify(this.triggerMREDB, null, '\t'));
+            console.log('cpack artifacts: ', JSON.stringify(this.artifactDB, null, '\t'));
+  					// this.context.onStarted(() => this.started());
+  					this.started();
+  				});
+  		}
+    });
+    // //=============================
+		// // Set up a userJoined() callback to attach userTrackers to the Users.
+		// //=============================
+		// this.context.onUserJoined((user) => this.userJoined(user));
+    //
+		// //=============================
+		// // Set up a userLeft() callback to clean up userTrackers as Users leave.
+		// //=============================
+		// this.context.onUserLeft((user) => this.userLeft(user));
+
 	}
 
 	/* eslint-enable */
@@ -475,15 +493,15 @@ export default class trigger {
 		// });
 
 
-		//=============================
-		// Set up a userJoined() callback to attach userTrackers to the Users.
-		//=============================
-		this.context.onUserJoined((user) => this.userJoined(user));
-
-		//=============================
-		// Set up a userLeft() callback to clean up userTrackers as Users leave.
-		//=============================
-		this.context.onUserLeft((user) => this.userLeft(user));
+		// //=============================
+		// // Set up a userJoined() callback to attach userTrackers to the Users.
+		// //=============================
+		// this.context.onUserJoined((user) => this.userJoined(user));
+    //
+		// //=============================
+		// // Set up a userLeft() callback to clean up userTrackers as Users leave.
+		// //=============================
+		// this.context.onUserLeft((user) => this.userLeft(user));
 
 
 
@@ -537,7 +555,7 @@ export default class trigger {
 
 
     // this.artifactDB = this.triggerMREDB["Artifacts"];
-    console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
+    // console.log("***> Artifacts", JSON.stringify(this.artifactDB, null, '\t'));
     console.log("preloadGLTFs() Artifacts: ", this.artifactDB);
     return Promise.all(
 			Object.keys(this.artifactDB).map(artifactId => {
@@ -644,7 +662,7 @@ export default class trigger {
         // trigger.setBehavior(MRE.ButtonBehavior).onClick(user => this.wearAccessory(key, user.id));
         trigger.created().then(() => {
           console.log("set up trigger events");
-          console.log("triggerFactory() trigger.created Artifacts: ", this.artifactDB);
+          // console.log("triggerFactory() trigger.created Artifacts: ", this.artifactDB);
 
           trigger.collider.isTrigger = true;
           trigger.collider.onTrigger('trigger-enter', (actor) => this.triggeredActions(actor, triggeredOnEnter));
@@ -764,10 +782,32 @@ export default class trigger {
                             scale: scale
                         }
                     },
-                    attachment: {
-                      attachPoint: attachPoint,
-                      userId: userId
+                    // attachment: {
+                    //   attachPoint: attachPoint,
+                    //   userId: userId
+                    // },
+                    appearance: { enabled: true }
+                }
+            });
+        } else if (!artifact.exclusive) {
+            actorRef = MRE.Actor.CreateFromLibrary(this.context, {
+                resourceId: artifact.resourceId,
+                actor: {
+                    name: key,
+                    transform: {
+                        local: {
+                            position: position,
+                            rotation: MRE.Quaternion.FromEulerAngles(
+                              rotation.x * MRE.DegreesToRadians,
+                              rotation.y * MRE.DegreesToRadians,
+                              rotation.z * MRE.DegreesToRadians),
+                            scale: scale
+                        }
                     },
+                    // attachment: {
+                    //   attachPoint: attachPoint,
+                    //   userId: userId
+                    // },
                     appearance: { enabled: true }
                 }
             });
