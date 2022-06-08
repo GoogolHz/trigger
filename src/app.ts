@@ -283,43 +283,6 @@ export default class trigger {
 		this.assets.unload();
 	}
 
-	// private spawnActors(count: number) {
-	//	if (this.spamRoot) {
-	//		this.spamRoot.destroy();
-	//	}
-	//
-	//	const ball = this.assets.meshes.find(m => m.name === 'ball')
-	//		|| this.assets.createSphereMesh('ball', 0.05);
-	//
-	//	this.spamRoot = MRE.Actor.Create(this.context, {
-	//		actor: {
-	//			name: 'spamRoot',
-	//			transform: { local: { position: { y: 1, z: -1 } } }
-	//		}
-	//	});
-	//
-	//	for (let i = 0; i < count; i++) {
-	//		let ramp = MRE.Actor.CreateFromLibrary(this.context, {
-	//			resourceId: 'artifact:1703071908439786046',
-	//			actor: {
-	//				name: `ramp${i}`,
-	//				collider: { geometry: { shape: MRE.ColliderType.Auto } },
-	//				// appearance: {
-	//				//	// meshId: boxMesh.id,
-	//				//	materialId: this.materials[Math.floor(Math.random() * this.materials.length)].id
-	//				// },
-	//				transform: {
-	//					local: {
-	//						scale: { x: 0.5, y: 0.5, z: 0.5 },
-	//						position: { x: 0, y: i*.15, z: -.5 }
-	//					}
-	//				}
-	//			}
-	//		});
-	//		ramp.created().then(() => ramp.trigger = true);
-	//	}
-	// }
-
   /* eslint-disable */
 	constructor(private context: MRE.Context, private params: MRE.ParameterSet, private baseUrl: string) {
 		// constructor(private context: MRE.Context, protected baseUrl: string) {
@@ -441,58 +404,6 @@ export default class trigger {
 		//==========================
 		this.syncfix.addSyncFunc(() => this.synchronizeAttachments());
 
-		// this.roles = this.params.roles as
-		// this.rolesString = this.params.roles as string;
-		// this.rolesArray = this.rolesString.split(',');
-		//
-		// this.wingsString = this.params.wings as string;
-		// this.wingsArray = this.wingsString.split(',');
-		//
-		// this.chokerString = this.params.choker as string;
-		// this.chokerArray = this.chokerString.split(',');
-
-		// if (this.params.roles === undefined) {
-		//			this.roles = "";
-		//		} else {
-		//			this.activeTestName = this.params.test as string;
-		//			this.activeTestFactory = Factories[this.activeTestName];
-		//			this.setupRunner();
-		//		}
-		// this.contentPack = this.params.cpack as string;
-    //
-		// console.log('cpack: ', this.contentPack);
-		// Load the database of artifacts
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		// this.artifactDB = require(`https://account.altvr.com/api/content_packs/${this.contentPack}/raw`);
-
-
-		//Uncomment this next block to trace values
-		// this.text = MRE.Actor.Create(this.context, {
-		//	actor: {
-		//		name: 'Text',
-		//		parentId: this.boat.id,
-		//		transform: {
-		//			// local: {
-		//			//	scale: { x: 1, y: 1, z: 1 },
-		//			//	// position: { x: 0, y: .5, z: -3 },
-		//			//	rotation: MRE.Quaternion.FromEulerAngles(2 * MRE.DegreesToRadians, 0, 0)
-		//			// },
-		//			app: {
-		//				position: { x: .04, y: .59, z: -2.98 },
-		//				rotation: MRE.Quaternion.FromEulerAngles(-10 * MRE.DegreesToRadians, 0, 0)
-		//			}
-		//		},
-		//		text: {
-		//			contents: `Swash     buckler`,
-		//			anchor: MRE.TextAnchorLocation.MiddleCenter,
-		//			color: { r: 0 / 255, g: 0 / 255, b: 0 / 255 },
-		//			height: 0.125
-		//		},
-		//		appearance: { enabled: true }
-		//	}
-		// });
-
-
 		// //=============================
 		// // Set up a userJoined() callback to attach userTrackers to the Users.
 		// //=============================
@@ -502,8 +413,6 @@ export default class trigger {
 		// // Set up a userLeft() callback to clean up userTrackers as Users leave.
 		// //=============================
 		// this.context.onUserLeft((user) => this.userLeft(user));
-
-
 
 		// //====================
 		// // Call an async function to "pulse" the size of the kit item in a loop.
@@ -1045,114 +954,6 @@ export default class trigger {
 			}
 		);
 
-
-		// this.text.text.contents = this.contentPack; //"";
-		// var names = 'Harry,John,Clark,Peter,Rohn,Alice';
-		// var nameArr = this.roles.split(',');
-
-		// this.rolesArray.forEach((role) => {
-		//	if (role=="show") this.text.text.contents = JSON.stringify(usersRoles);
-		//
-		//	if (usersRoles.includes(role) || role == "all") {
-		//		if (choker===null) {
-		//			choker = MRE.Actor.CreateFromLibrary(this.context, {
-		//				resourceId: 'artifact:1779817570145141338',
-		//				actor: {
-		//					attachment: {
-		//						attachPoint: 'neck',
-		//						userId: user.id
-		//					},
-		//					appearance: { enabled: true },
-		//					transform: {
-		//						local: {
-		//							scale: { x:1.005, y:1.005, z:1.005 },
-		//							position: {x:0, y:-.0275, z:-.005},
-		//							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
-		//						},
-		//					}
-		//				}
-		//			});
-		//			attached.push(choker);
-		//		}
-		//
-		//		if (wings===null) {
-		//			wings = MRE.Actor.CreateFromLibrary(this.context, {
-		//				resourceId: 'artifact:1781612302869463999',
-		//				actor: {
-		//					attachment: {
-		//						attachPoint: 'spine-middle',
-		//						userId: user.id
-		//					},
-		//					appearance: { enabled: true },
-		//					transform: {
-		//						local: {
-		//							scale: { x:1, y:1, z:1 },
-		//							position: {x:0, y:.1, z:-.18}, //-.06 .15
-		//							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
-		//						},
-		//					}
-		//				}
-		//			});
-		//			attached.push(wings);
-		//		}
-		//	}
-		// });
-
-		// this.chokerArray.forEach((role) => {
-		//	if (usersRoles.includes(role) || role == "all") {
-		//		if (choker===null) {
-		//			choker = MRE.Actor.CreateFromLibrary(this.context, {
-		//				resourceId: 'artifact:1779817570145141338',
-		//				actor: {
-		//					attachment: {
-		//						attachPoint: 'neck',
-		//						userId: user.id
-		//					},
-		//					appearance: { enabled: true },
-		//					transform: {
-		//						local: {
-		//							scale: { x:1.005, y:1.005, z:1.005 },
-		//							position: {x:0, y:-.0275, z:-.005},
-		//							rotation: MRE.Quaternion.FromEulerAngles(4*MRE.DegreesToRadians, 0, 0)
-		//						},
-		//					}
-		//				}
-		//			});
-		//			attached.push(choker);
-		//		}
-		//	}
-		// });
-
-		// this.wingsArray.forEach((role) => {
-		//	if (usersRoles.includes(role) || role == "all") {
-		//		if (wings===null) {
-		//			wings = MRE.Actor.CreateFromLibrary(this.context, {
-		//				resourceId: 'artifact:1781612302869463999',
-		//				actor: {
-		//					attachment: {
-		//						attachPoint: 'spine-middle',
-		//						userId: user.id
-		//					},
-		//					appearance: { enabled: true },
-		//					transform: {
-		//						local: {
-		//							scale: { x:1, y:1, z:1 },
-		//							position: {x:0, y:.1, z:-.18}, //-.06 .15
-		//							rotation: MRE.Quaternion.FromEulerAngles(-5*MRE.DegreesToRadians, 0, 0)
-		//						},
-		//					}
-		//				}
-		//			});
-		//			attached.push(wings);
-		//		}
-		//	}
-		// });
-
-
-
-
-
-		// this.attachments.set(user.id, attached);
 
 		/*
 		 * Let the syncFix know another user has joined.
